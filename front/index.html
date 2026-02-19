@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leitor V20 - Estoque</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    </script>
+
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+    <style>
+        /* CSS ESPECÍFICO PARA A NAVEGAÇÃO ENTRE ARQUIVOS */
+        .tab-nav {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            border-bottom: 2px solid #ccfbf1;
+            padding-bottom: 0;
+        }
+
+        .tab-link {
+            text-decoration: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #64748b;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid transparent;
+            border-bottom: none;
+            transition: all 0.2s;
+            background: #f8fafc;
+            margin-bottom: -2px;
+            /* Gruda na linha de baixo */
+        }
+
+        .tab-link:hover {
+            background: #f0fdfa;
+            color: #0f766e;
+        }
+
+        /* Classe para a aba que está aberta no momento */
+        .tab-link.active {
+            background: #ffffff;
+            color: #0f766e;
+            border-color: #ccfbf1;
+            border-top: 3px solid #0f766e;
+            z-index: 10;
+        }
+
+        /* Estilo do botão de exportar (Dica de produtividade) */
+        .btn-export {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-export:hover {
+            background: #2563eb;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header style="display: block;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <h1>Mega Axnen</h1>
+
+                </div>
+
+                <div style="display: flex; align-items:center; gap: 12px;">
+
+
+                    <button onclick="logout()"
+                        style="background:none; border:none; color:#ff4d4d; cursor:pointer; display:flex; align-items:center; gap:5px; font-weight:bold;">
+                        <span class="material-icons">logout</span> Sair
+                    </button>
+                </div>
+            </div>
+
+            <nav class="tab-nav">
+                <a href="index.html" class="tab-link active">
+                    <span class="material-icons" style="font-size:18px">inventory_2</span> Estoque
+                </a>
+                <a href="analytics.html" class="tab-link" id="link-analytics">
+                    <span class="material-icons" style="font-size:18px">bar_chart</span> Analytics
+                </a>
+                <a href="qualidade.html" class="tab-link">
+                    <span class="material-icons" style="font-size:18px">fact_check</span> Qualidade
+                </a>
+                <a href="bipagem.html" class="tab-link" id="link-bipagem">
+                    <span class="material-icons" style="font-size:18px">qr_code_scanner</span> Bipagem
+                </a>
+                <a href="mapa.html" class="tab-link" id="link-mapa">
+                    <span class="material-icons" style="font-size:18px">map</span> Mapa
+                </a>
+            </nav>
+        </header>
+
+        <div class="grid" style="margin-top: 20px;">
+            <div class="sidebar">
+                <div class="panel">
+                    <h3>Baixa Automática</h3>
+                    <p style="font-size:0.85em; color:#666;">Aceita desalinhamento e linha única.</p>
+
+                    <div style="margin-bottom: 12px;">
+                        <label
+                            style="font-size: 0.75em; color: var(--primary); font-weight: bold; display: block; margin-bottom: 4px;">DATA
+                            DO LANÇAMENTO:</label>
+                        <input type="date" id="dataLancamento"
+                            style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccfbf1; font-family: inherit;">
+                    </div>
+
+                    <label class="btn-upload">
+                        📄 Ler PDFs de Vendas
+                        <input type="file" multiple accept=".pdf" style="display:none" onchange="processPDF(this)">
+                    </label>
+                </div>
+
+                <div class="panel panel-error">
+                    <h3 style="margin-top:0;">⚠️ Não Encontrados</h3>
+                    <p style="font-size:0.8em; margin-bottom:10px;">Verifique se precisa cadastrar alias:</p>
+                    <ul id="errorList" style="list-style: none; padding: 0; margin: 10px 0;">
+                        <li style="color:#666; font-style:italic; text-align: center; padding: 20px;">
+                            Aguardando leitura de PDF...
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="panel panel-error"
+                    style="margin-top: 0px; border-color: #ef4444; background: #fef2f2; max-height: 400px; overflow-y: auto; position: relative; padding-top: 0;">
+                    <div
+                        style="position: sticky; top: 0; background: #fef2f2; padding: 15px 15px 5px 15px; z-index: 10; border-bottom: 1px solid #fecaca;">
+                        <h3 style="margin-top:0; color: #b91c1c; margin-bottom: 5px;">🚨 Alerta de Reposição</h3>
+                        <p style="font-size:0.8em; margin-bottom:0;">Produtos com baixa quantidade:</p>
+                    </div>
+
+                    <ul id="shortageList" style="padding: 10px 15px; margin: 0; list-style: none;">
+                        <li style="color:#16a34a; font-style:italic;">✅ Nenhum item em falta</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div>
+
+                <div class="toolbar" style="display: flex; flex-direction: column; gap: 15px;">
+                    <div style="display: flex; gap: 10px; width: 100%;">
+                        <input type="text" id="search" class="search-box" style="flex-grow: 1;"
+                            placeholder="🔍 Buscar SKU (Atalho: /)" onkeyup="render()">
+                        <button class="btn-add" onclick="openModal()">➕ Novo Produto (F2)</button>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px; width: fit-content;">
+                        <label
+                            style="font-size: 0.75em; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Ordenar
+                            por:</label>
+                        <select id="filterOrder" onchange="ordenarProdutos(this.value)" class="search-box"
+                            style="width: 140px; margin: 0; padding: 2px 5px; height: 30px; font-size: 0.8em; border-color: #e2e8f0; background: #f8fafc;">
+                            <option value="nome">A-Z</option>
+                            <option value="nome_desc">Z-A</option>
+                            <option value="maior_estoque"> Maior Estoque</option>
+                            <option value="estoque_baixo">Menor Estoque</option>
+                            <option value="recentes"> Mais Recentes</option>
+                            <option value="esgotados"> Esgotados</option>
+                            <option value="repor"> Para Repor</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table id="table">
+                        <thead>
+                            <th>Produto</th>
+                            <th style="width:110px; text-align:center;">Qtd</th>
+                            <th style="width:100px; text-align: left; padding-left: 15px;">Status</th>
+                            <th style="width:100px; text-align:center;">Ações</th>
+                        </thead>
+                        <tbody id="tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="log">> Base V20 carregada. Não esqueça de resetar se mudou o código.</div>
+        <div id="toast-container" class="toast-container"></div>
+    </div>
+
+    <div class="modal-overlay" id="modal">
+        <div class="modal">
+            <h2 id="modalTitle">Produto</h2>
+            <input type="hidden" id="editIndex">
+            <div class="form-group">
+                <label>Nome do Produto</label>
+                <input type="text" id="inpName" placeholder="Ex: KP-397">
+            </div>
+            <div class="form-group">
+                <label>Aliases (Separe por vírgula)</label>
+                <input type="text" id="inpAliases" placeholder="Ex: KP397, KP-397 AZUL">
+            </div>
+            <div class="form-group">
+                <label>Quantidade</label>
+                <input type="number" id="inpQty" value="300">
+            </div>
+            <div class="modal-actions">
+                <button onclick="closeModal()">Cancelar</button>
+                <button onclick="saveProduct()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="confirmModal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; justify-content:center; align-items:center;">
+        <div
+            style="background:white; padding:25px; border-radius:12px; width:90%; max-width:400px; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+            <span class="material-icons" style="font-size:48px; color: #f59e0b;">help_outline</span>
+            <h3 id="confirmTitle" style="margin:15px 0 10px;">Confirmar Alteração</h3>
+            <p id="confirmMessage" style="color:#64748b; margin-bottom:25px;">Tem certeza que deseja salvar as
+                alterações?</p>
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button id="btnConfirmNo"
+                    style="padding:10px 25px; border-radius:8px; border:1px solid #cbd5e1; background:white; cursor:pointer; font-weight:bold;">Não</button>
+                <button id="btnConfirmYes"
+                    style="padding:10px 25px; border-radius:8px; border:none; background:#0f766e; color:white; cursor:pointer; font-weight:bold;">Sim,
+                    Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+
+</html>
+
+</body>
+
+</html>

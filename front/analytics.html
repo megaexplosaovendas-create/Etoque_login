@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics V20 - Inteligência de Dados</title>
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="js/analytics.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+    <script src="js/analytics.js" defer></script>
+</head>
+
+<body>
+
+    <div class="container">
+        <header>
+            <div style="display:flex; align-items:center; gap:15px;">
+                <h1>📊 Intelligence Analytics</h1>
+                <span
+                    style="background: #ccfbf1; color: #0f766e; padding: 4px 10px; border-radius: 20px; font-size: 0.8em; font-weight: bold;">MÓDULO
+                    DE DADOS</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <input type="date" id="reportDate" style="padding:8px; border-radius:6px; border:1px solid #cbd5e1;">
+            </div>
+        </header>
+
+        <nav class="tab-nav">
+            <a href="index.html" class="tab-link">
+                <span class="material-icons" style="font-size:18px">inventory_2</span> Estoque
+            </a>
+
+            <div class="dropdown">
+                <a href="#" class="tab-link active">
+                    <span class="material-icons" style="font-size:18px">analytics</span> Inteligência ▼
+                </a>
+                <div class="dropdown-content">
+                    <a href="#" onclick="showSection('executivo')">
+                        <span class="material-icons">dashboard</span> Dashboard Executivo
+                    </a>
+                    <a href="#" onclick="showSection('performance')">
+                        <span class="material-icons">trending_up</span> Performance de Produtos
+                    </a>
+                    <a href="#" onclick="showSection('logistica')">
+                        <span class="material-icons">local_shipping</span> Logística / Expedição
+                    </a>
+                </div>
+            </div>
+
+            <a href="qualidade.html" class="tab-link">
+                <span class="material-icons" style="font-size:18px">fact_check</span> Qualidade
+            </a>
+        </nav>
+
+        <div id="executivo" class="analytics-section active">
+            <div class="kpi-grid">
+                <div class="kpi-card" style="border-left: 5px solid #0f766e;">
+                    <h4>Giro de Estoque Geral</h4>
+                    <div class="kpi-value" id="dashGiro">0.0%</div>
+                    <small>Eficiência de saída vs total parado</small>
+                </div>
+                <div class="kpi-card" style="border-left: 5px solid #f59e0b;">
+                    <h4>Ruptura Iminente</h4>
+                    <div class="kpi-value" id="dashRuptura">0</div>
+                    <small>Produtos com menos de 5 unidades</small>
+                </div>
+                <div class="kpi-card" style="border-left: 5px solid #3b82f6;">
+                    <h4>Volume de Bipagem (Hoje)</h4>
+                    <div class="kpi-value" id="dashBipesHoje">0</div>
+                    <small>Pacotes processados na expedição</small>
+                </div>
+                <div class="kpi-card" style="border-left: 5px solid #ef4444;">
+                    <h4>SKUs Sem Giro (+30d)</h4>
+                    <div class="kpi-value" id="dashInativos">0</div>
+                    <small>Itens ocupando espaço sem venda</small>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3>📈 Desempenho de Vendas (Últimos 15 Dias)</h3>
+                    <span id="trendStatus"
+                        style="font-size: 0.8em; font-weight: bold; color: var(--primary);">ESTATÍSTICAS EM TEMPO
+                        REAL</span>
+                </div>
+                <div class="chart-container" style="height: 350px;">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <section id="performance" class="analytics-section">
+
+            <div class="chart-card">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 0 5px;">
+                    <h3 style="font-size: 1.1em; color: #1e293b;">🏆 Top 10 Mais Vendidos</h3>
+                    <select id="periodoTop10" onchange="renderizarTop10()"
+                        style="padding: 6px 10px; border-radius: 6px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 0.85em; cursor: pointer; outline: none;">
+                        <option value="hoje">Hoje</option>
+                        <option value="semana">Últimos 7 dias</option>
+                        <option value="mes" selected>Últimos 30 dias</option>
+                    </select>
+                </div>
+                <ul id="topProductsList" style="list-style:none; padding:0; margin:0;">
+                </ul>
+            </div>
+
+            <div class="chart-card" style="margin-top: 20px;">
+                <h3>🔍 Análise por SKU (Individual)</h3>
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <input type="text" id="skuSearchInput" list="skuSuggestions" placeholder="Digite SKU ou Nome..."
+                        style="flex:1; padding:8px; border-radius:6px; border:1px solid #ccc;"
+                        oninput="buscarSugestoes(this.value)">
+
+                    <datalist id="skuSuggestions"></datalist>
+
+                    <button onclick="analisarProduto()"
+                        style="padding:8px 15px; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">Analisar</button>
+                </div>
+            </div>
+
+            <div id="valorGrid" class="kpi-grid"
+                style="display:none; margin-top: 20px; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+
+                <div class="kpi-card" style="border-left: 5px solid #ef4444; position: relative;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h4>Custo Unitário</h4>
+                        <button onclick="abrirModalCustos()"
+                            style="border:none; background:none; cursor:pointer; font-size: 1rem; color:#3b82f6;"
+                            title="Editar Custo">✏️</button>
+                    </div>
+                    <div id="skuCustoCompra" class="kpi-value" style="color: #c0392b;">R$ 0,00</div>
+                    <small id="avisoSimulacao" style="display:none; color:#f59e0b; font-weight:bold;">(Simulado)</small>
+                    <small style="color: #666;" id="textoBaseCusto">Base Fornecedor</small>
+                </div>
+
+                <div class="kpi-card" style="border-left: 5px solid #2ecc71; position: relative;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h4>Preço Médio de Venda</h4>
+                        <button onclick="abrirModalPreco()"
+                            style="border:none; background:none; cursor:pointer; font-size: 1rem; color:#2ecc71;"
+                            title="Simular Novo Preço">✏️</button>
+                    </div>
+                    <div id="skuPrecoMedio" class="kpi-value">R$ 0,00</div>
+                    <small id="avisoPrecoSimulado"
+                        style="display:none; color:#f59e0b; font-weight:bold;">(Simulado)</small>
+                    <small id="variacaoPreco" style="color: #666;">-- média do período</small>
+                </div>
+
+                <div class="kpi-card" style="border-left: 5px solid #9b59b6;">
+                    <h4>Faturamento Estimado</h4>
+                    <div id="skuFaturamento" class="kpi-value">R$ 0,00</div>
+                    <small>Total bruto (Vendas x Preço)</small>
+                </div>
+
+            </div>
+
+            <div class="chart-card" id="detalhesAvancadosSKU" style="display:none; margin-top: 20px;">
+                <h3>📋 Background & Logística</h3>
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <h4>Fornecedor</h4>
+                        <div id="resFornecedor" class="kpi-value" style="font-size:1.1em;">--</div>
+                    </div>
+                    <div class="kpi-card">
+                        <h4>Data de Chegada</h4>
+                        <div id="resDataChegada" class="kpi-value" style="font-size:1.1em;">00/00/0000</div>
+                    </div>
+                    <div class="kpi-card">
+                        <h4>Ranking Curva ABC</h4>
+                        <div id="resRanking" class="kpi-value" style="color: var(--primary);">--</div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div id="financeiroGrid" class="kpi-grid"
+                style="display:none; margin-top: 20px; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                <div class="kpi-card" style="background: #fff3e0; border-left: 5px solid #ff9800;">
+                    <h4>Gasto Ads</h4>
+                    <div id="skuInvestimentoAds" class="kpi-value" style="color: #e65100;">R$ 0,00</div>
+                </div>
+                <div class="kpi-card" style="background: #e8f5e9; border-left: 5px solid #2e7d32;">
+                    <h4>Lucro Real</h4>
+                    <div id="skuLucroReal" class="kpi-value" style="color: #1b5e20;">R$ 0,00</div>
+                </div>
+                <div class="kpi-card" style="border-left: 5px solid #2196f3;">
+                    <h4>ROAS</h4>
+                    <div id="skuROAS" class="kpi-value">0.00x</div>
+                </div>
+                <div class="kpi-card" style="border-left: 5px solid #9c27b0;">
+                    <h4>ROI</h4>
+                    <div id="skuROI" class="kpi-value">0%</div>
+                </div>
+            </div>
+
+            <div id="cardGraficoPicos" class="chart-wrapper">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>📈 Histórico de Vendas (30 dias)</h3>
+                        <span id="txtMelhorDia" class="badge-melhor-dia">
+                            Melhor dia: --
+                        </span>
+                    </div>
+
+                    <div class="chart-container">
+                        <canvas id="graficoVendas"></canvas>
+                    </div>
+
+                    <div class="chart-footer">
+                        <span>30 dias atrás</span>
+                        <span>Hoje</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="skuResultGrid" class="kpi-grid" style="display:none; margin-top:15px;">
+                <div class="kpi-card">
+                    <h4>Hoje</h4>
+                    <div class="kpi-value" id="skuVendaHoje">0</div>
+                </div>
+                <div class="kpi-card">
+                    <h4>Semana</h4>
+                    <div class="kpi-value" id="skuVendaSemana">0</div>
+                </div>
+                <div class="kpi-card">
+                    <h4>Mês</h4>
+                    <div class="kpi-value" id="skuVendaMes">0</div>
+                </div>
+                <div class="kpi-card">
+                    <h4>Pico</h4>
+                    <div class="kpi-value" id="skuPicoHora" style="font-size:1.2em;">--:--</div>
+                </div>
+            </div>
+
+        </section>
+
+        <section id="logistica" class="analytics-section">
+            <div class="kpi-grid">
+
+                <div class="kpi-card">
+                    <h4>Ritmo da Expedição</h4>
+                    <div class="kpi-value" id="ritmoBipagem">0</div>
+                    <div id="tendenciaRitmo" style="font-size: 0.85em; font-weight: bold;">
+                        <span class="material-icons" style="font-size: 14px; vertical-align: middle;">trending_up</span>
+                        <span id="valorTendencia">0%</span> vs última hora
+                    </div>
+                </div>
+                <div class="kpi-card" style="background: #3b82f6; color: white; border: none;">
+                    <h4 style="color: rgba(255,255,255,0.8);">Total Bipado</h4>
+                    <div class="kpi-value" id="totalBipesHoje" style="color: white; font-size: 2.5em;">0</div>
+                    <small>Pacotes processados</small>
+                </div>
+
+                <div class="kpi-card" id="cardAssertividade" style="border-left: 5px solid #10b981;">
+                    <h4>Assertividade</h4>
+                    <div class="kpi-value" id="taxaAssertividade">0%</div>
+                    <small id="txtErroStatus">Operação saudável</small>
+                </div>
+
+                <div class="kpi-card">
+                    <h4>Ritmo da Expedição</h4>
+                    <div class="kpi-value" id="ritmoBipagem">0</div>
+                    <small>Bipes / Hora</small>
+                </div>
+
+                <div class="kpi-card">
+                    <h4>Meta do Dia</h4>
+                    <div class="kpi-value" id="metaProgresso">0%</div>
+                    <div style="background:#eee; height:8px; border-radius:4px; margin-top:10px;">
+                        <div id="barraMeta"
+                            style="width:0%; background:#3b82f6; height:100%; border-radius:4px; transition:0.5s;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="charts-main">
+                <div class="chart-card">
+                    <h3>🕒 Produtividade por Hora</h3>
+                    <div class="chart-container" style="height: 300px;">
+                        <canvas id="chartProdutividade"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <h3>📋 Histórico de Bipes (Audit)</h3>
+                    <div style="max-height: 300px; overflow-y: auto;">
+                        <table class="recent-table">
+                            <thead>
+                                <tr style="position: sticky; top: 0; background: white; text-align: left;">
+                                    <th>Hora</th>
+                                    <th>Código</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logTbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="modalCustosWrapper" class="modal-overlay" style="display: none;">
+                    <div class="modal-content">
+                        <h3 style="margin-top:0; color:#1e293b; margin-bottom: 5px;">💰 Composição de Custo</h3>
+                        <p style="font-size:0.8em; color:#64748b; margin-bottom:20px;">Edite os valores para simular o
+                            lucro real.</p>
+
+                        <div class="input-group">
+                            <label>Preço Fornecedor (R$)</label>
+                            <input type="number" id="inputFornecedor" step="0.01" oninput="calcularTotalModal()"
+                                placeholder="0.00">
+                        </div>
+
+                        <div class="input-group">
+                            <label>Embalagem / Insumos (R$)</label>
+                            <input type="number" id="inputEmbalagem" step="0.01" oninput="calcularTotalModal()"
+                                placeholder="0.00">
+                        </div>
+
+                        <div class="input-group">
+                            <label>Impostos / Frete Entrada (R$)</label>
+                            <input type="number" id="inputImposto" step="0.01" oninput="calcularTotalModal()"
+                                placeholder="0.00">
+                        </div>
+
+                        <div class="total-display"
+                            style="background:#f8fafc; padding:15px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border:1px solid #e2e8f0;">
+                            <span style="font-weight:600; color:#475569;">Novo Custo Total:</span>
+                            <span id="previewCustoTotal" style="font-weight:bold; color:#ef4444; font-size:1.2em;">R$
+                                0,00</span>
+                        </div>
+
+                        <div class="modal-actions" style="display:flex; gap:10px;">
+                            <button onclick="fecharModalCustos()" class="btn-cancel"
+                                style="flex:1; padding:12px; border:1px solid #cbd5e1; background:white; border-radius:6px; cursor:pointer; color: #64748b;">Cancelar</button>
+                            <button onclick="salvarNovosCustos()" class="btn-save"
+                                style="flex:1; padding:12px; border:none; background:#3b82f6; color:white; border-radius:6px; cursor:pointer; font-weight:600;">Aplicar
+                                & Recalcular</button>
+                        </div>
+                    </div>
+                </div>
+
+
+            </div>
+        </section>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script src="js/analytics.js"></script>
+</body>
+
+</html>

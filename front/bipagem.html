@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conferência Pro - Filtro de Cancelados</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <link rel="stylesheet" href="css/bipagem.css">
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="js/config.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <nav class="main-nav">
+        <a href="index.html" class="nav-link"><span class="material-icons">inventory_2</span> Estoque</a>
+        <a href="qualidade.html" class="nav-link"><span class="material-icons">fact_check</span> Qualidade</a>
+        <a href="bipagem.html" class="nav-link active"><span class="material-icons">qr_code_scanner</span> Bipagem</a>
+        <a href="mapa.html" class="nav-link"><span class="material-icons">map</span> Mapa</a>
+    </nav>
+</head>
+
+<body>
+
+    <div class="container">
+        <h2>📡 Controle de Embarque</h2>
+
+        <div class="stats-grid">
+            <div class="stat-card stat-total"><span id="c-total" class="stat-val">0</span>Total</div>
+            <div class="stat-card stat-ok"><span id="c-ok" class="stat-val">0</span>Liberados</div>
+            <div class="stat-card stat-cancel"><span id="c-cancel" class="stat-val">0</span>Cancelados</div>
+            <div class="stat-card stat-dup"><span id="c-dup" class="stat-val">0</span>Duplicados</div>
+        </div>
+
+        <button class="btn btn-sync" onclick="sincronizarDados()">🔄 Baixar Planilha (GitHub/cancelados.xlsx)</button>
+        <div id="dbStatus" style="font-size: 0.9rem; margin: 10px 0; font-weight: bold; color: #555;">Status: Aguardando
+            sincronização...</div>
+
+        <div id="result-box" class="bg-idle">Aguardando Bipagem</div>
+        <div class="scanner-mode">✅ Bipador USB/Bluetooth Ativo | 📷 Câmera Ativa</div>
+        <div id="reader"></div>
+
+        <div class="driver-info">
+            <input type="text" id="motorista" placeholder="Nome do Motorista">
+            <input type="text" id="cpf" placeholder="CPF">
+            <input type="text" id="placa" placeholder="Placa do Veículo">
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <button class="btn btn-pdf" onclick="gerarPDF()">📄 Gerar PDF com Assinaturas</button>
+            <button class="btn btn-clear" onclick="clearData()">🗑️ Limpar Sessão</button>
+        </div>
+
+        <h3 style="text-align: left;">Histórico da Carga</h3>
+        <table id="historyTable">
+            <thead>
+                <tr>
+                    <th>Código Lido</th>
+                    <th>Status</th>
+                    <th>Horário</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script src="js/bipagem.js"></script>
+    
+</body>
+
+</html>

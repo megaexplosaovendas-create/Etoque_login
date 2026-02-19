@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WMS PRO - Novo Funcionário</title>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #111827;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* FUNDO IGUAL AO LOGIN */
+        .fundo-imagem {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=2070');
+            background-size: cover;
+            background-position: center;
+            opacity: 0.4;
+            z-index: 1;
+        }
+
+        .mascara-escura {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 2;
+        }
+
+        /* CONTAINER BRANCO */
+        .container-cadastro {
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 500px;
+            /* Um pouco mais largo que o login */
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            margin: 20px;
+        }
+
+        /* CABEÇALHO */
+        .cabecalho-topo {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+            gap: 15px;
+        }
+
+        .btn-voltar {
+            color: #6b7280;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            padding: 8px;
+            border-radius: 50%;
+        }
+
+        .btn-voltar:hover {
+            color: #2563eb;
+            background-color: #eff6ff;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            color: #1f2937;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: -1px;
+        }
+
+        /* FORMULÁRIO */
+        .grupo-input {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            color: #4b5563;
+            letter-spacing: 1px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            border: 2px solid #f3f4f6;
+            background-color: #f9fafb;
+            font-size: 0.9rem;
+            font-weight: 600;
+            outline: none;
+            transition: all 0.3s ease;
+            color: #1f2937;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: #2563eb;
+            background-color: #ffffff;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+
+        /* BOTÃO CONFIRMAR */
+        .btn-confirmar {
+            width: 100%;
+            padding: 15px;
+            background-color: #059669;
+            /* Verde Esmeralda para Cadastro */
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: transform 0.1s, background-color 0.3s;
+            box-shadow: 0 10px 20px rgba(5, 150, 105, 0.3);
+            margin-top: 10px;
+        }
+
+        .btn-confirmar:hover {
+            background-color: #047857;
+            transform: translateY(-2px);
+        }
+
+        .btn-confirmar:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="fundo-imagem"></div>
+    <div class="mascara-escura"></div>
+
+    <div class="container-cadastro">
+
+        <div class="cabecalho-topo">
+            <a href="index.html" class="btn-voltar" title="Voltar ao Painel">
+                <span class="material-icons" style="font-size: 28px;">arrow_back</span>
+            </a>
+            <div>
+                <h1 style="line-height: 1;">Novo Membro</h1>
+                <span
+                    style="font-size: 0.75rem; font-weight: bold; color: #6b7280; text-transform: uppercase; letter-spacing: 1px;">Adicionar
+                    à Equipe</span>
+            </div>
+        </div>
+
+        <form id="registerForm">
+            <div class="grupo-input">
+                <label for="new_user">Nome de Usuário</label>
+                <input type="text" id="new_user" placeholder="Ex: joao.silva" required>
+            </div>
+
+            <div class="grupo-input">
+                <label for="new_pass">Senha de Acesso</label>
+                <input type="password" id="new_pass" placeholder="Crie uma senha forte" required>
+            </div>
+
+            <div class="grupo-input">
+                <label for="new_role">Nível de Permissão</label>
+                <select id="new_role">
+                    <option value="estoquista">📦 Estoquista (Apenas Movimentação)</option>
+                    <option value="vendedor">💰 Vendas (Baixa de Estoque)</option>
+                    <option value="admin">🔑 Administrador (Acesso Total)</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn-confirmar">Cadastrar Funcionário</button>
+        </form>
+
+    </div>
+
+    <script>
+        // 1. TRAVA DE SEGURANÇA (Só Admin pode ver essa tela)
+        // Se tentar entrar direto pelo link sem ser admin, é expulso.
+        const role = sessionStorage.getItem('wms_role');
+        if (role !== 'admin') {
+            alert("⛔ Acesso Negado!\nApenas administradores podem cadastrar novos usuários.");
+            window.location.href = 'index.html';
+        }
+
+        // 2. LÓGICA DE CADASTRO
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const btn = document.querySelector('.btn-confirmar');
+            const originalText = btn.innerText;
+
+            // Feedback Visual
+            btn.innerText = "Cadastrando...";
+            btn.style.opacity = "0.7";
+            btn.disabled = true;
+
+            const userData = {
+                username: document.getElementById('new_user').value,
+                password: document.getElementById('new_pass').value,
+                role: document.getElementById('new_role').value
+            };
+
+            try {
+                const res = await fetch('http://localhost:3000/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(userData)
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    alert(`✅ Sucesso!\nO usuário "${userData.username}" foi criado.`);
+                    document.getElementById('registerForm').reset();
+                    document.getElementById('new_user').focus();
+                } else {
+                    alert("❌ Erro: " + (data.message || "Não foi possível cadastrar."));
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Erro de conexão com o servidor.");
+            } finally {
+                btn.innerText = originalText;
+                btn.style.opacity = "1";
+                btn.disabled = false;
+            }
+        });
+
+        const bcrypt = require('bcrypt');
+        const User = require('./models/User'); // Verifique se o caminho do seu Model está certo
+        const sequelize = require('./config/db');
+
+      
+    </script>
+
+</body>
+
+</html>

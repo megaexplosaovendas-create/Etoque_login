@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WMS PRO - Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-900">
+    <div class="relative h-screen w-full flex items-center justify-center overflow-hidden">
+        <div class="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-40"
+            style="background-image: url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=2070&auto=format&fit=crop');">
+        </div>
+        <div class="absolute inset-0 z-10 bg-black/30"></div>
+
+        <div
+            class="relative z-20 w-full max-w-md p-10 bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-white/20">
+            <div class="flex flex-col items-center mb-8">
+                <div class="w-16 h-1.5 bg-blue-600 mb-6 rounded-full shadow-sm"></div>
+                <h1 class="text-4xl font-black text-gray-900 tracking-tight">
+                    WMS <span class="text-blue-600">PRO</span>
+                </h1>
+                <p class="text-gray-400 font-bold text-[10px] uppercase tracking-widest mt-2">Sistema de Gestão de
+                    Estoque</p>
+            </div>
+
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label
+                        class="block text-[10px] font-black text-gray-700 mb-2 uppercase tracking-widest">Usuário</label>
+                    <input type="text" id="user"
+                        class="w-full px-5 py-4 rounded-xl bg-gray-50 border-2 border-transparent focus:border-blue-600 focus:bg-white outline-none text-sm font-bold transition-all shadow-sm"
+                        placeholder="Digite o usuário" required>
+                </div>
+                <div>
+                    <label
+                        class="block text-[10px] font-black text-gray-700 mb-2 uppercase tracking-widest">Senha</label>
+                    <input type="password" id="password"
+                        class="w-full px-5 py-4 rounded-xl bg-gray-50 border-2 border-transparent focus:border-blue-600 focus:bg-white outline-none text-sm font-bold transition-all shadow-sm"
+                        placeholder="Digite a senha" required>
+                </div>
+                <button type="submit"
+                    class="w-full py-4 px-6 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-xl shadow-lg shadow-blue-600/30 transition-all transform active:scale-95 uppercase tracking-widest text-xs">
+                    Entrar no WMS
+                </button>
+            </form>
+        </div>
+    </div>
+
+
+
+    <script>
+        // 1. Verificação imediata: Se já logou, manda pra home
+        if (sessionStorage.getItem('wms_logado') === 'true') {
+            window.location.href = 'index.html';
+        }
+
+        // 2. Lógica de envio do formulário (Uma única vez!)
+        document.getElementById('loginForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const user = document.getElementById('user').value;
+            const pass = document.getElementById('password').value;
+
+            try {
+                // Chamada para o seu servidor Node.js
+                const response = await fetch('http://localhost:3000/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user, password: pass })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // 1. Salva o "crachá" do usuário
+                    sessionStorage.setItem('wms_logado', 'true');
+                    sessionStorage.setItem('wms_role', data.role);
+
+                    // 2. Link direto para o Index
+                    window.location.href = 'index.html';
+                } else {
+                    alert('Erro: ' + (data.message || 'Credenciais inválidas'));
+                }
+            } catch (err) {
+                console.error('Erro na conexão:', err);
+                alert('O servidor está desligado ou inacessível.');
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Acha o botão de entrar pelo texto ou tipo
+            const btnEntrar = document.querySelector('button[type="submit"]');
+
+            // 2. Tenta achar o campo onde a pessoa digitou o nome.
+            // (Tenta achar pelo ID 'usuario', 'user', 'email' ou pega o primeiro input de texto da tela)
+            const campoUsuario = document.getElementById('usuario') ||
+                document.getElementById('user') ||
+                document.querySelector('input[name="usuario"]') ||
+                document.querySelector('input[type="text"]');
+
+            if (btnEntrar && campoUsuario) {
+                btnEntrar.addEventListener('click', () => {
+                    const nomeDigitado = campoUsuario.value;
+
+                    // Se o campo não estiver vazio, SALVA O NOME!
+                    if (nomeDigitado.trim() !== "") {
+                        sessionStorage.setItem('username', nomeDigitado);
+
+                        // Garante que o sistema saiba que está logado
+                        sessionStorage.setItem('wms_logado', 'true');
+
+                        console.log("✅ Usuário salvo na memória:", nomeDigitado);
+                    }
+                });
+            }
+        });
+
+    </script>
+</body>
+
+</html>

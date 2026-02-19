@@ -1,0 +1,597 @@
+:root {
+    --primary: #0f766e;
+    --bg: #f0fdfa;
+    --text: #134e4a;
+    --success: #16a34a;
+    --danger: #dc2626;
+    --warning-bg: #fff1f2;
+    --warning-border: #fecaca;
+    --warning-text: #991b1b;
+}
+
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 20px;
+    margin: 0;
+}
+
+.container {
+    max-width: 1300px;
+    margin: 0 auto;
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #ccfbf1;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+
+h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: var(--primary);
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 20px;
+}
+
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.panel {
+    background: #f0fdfa;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #99f6e4;
+}
+
+.panel-error {
+    background: var(--warning-bg);
+    border: 1px solid var(--warning-border);
+    color: var(--warning-text);
+}
+
+.btn-upload {
+    background: white;
+    border: 2px dashed #2dd4bf;
+    padding: 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    width: 100%;
+    display: block;
+    margin-bottom: 15px;
+    font-weight: bold;
+    color: var(--primary);
+    transition: 0.2s;
+    box-sizing: border-box;
+}
+
+.btn-upload:hover {
+    background: #ccfbf1;
+}
+
+.toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.search-box {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+}
+
+.btn-add {
+    background: var(--success);
+    color: white;
+    border: none;
+    padding: 0 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.btn-add:hover {
+    background: #15803d;
+}
+
+.btn-reset {
+    background: var(--danger);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.table-container {
+    height: 600px;
+    overflow-y: auto;
+    border: 1px solid #ccfbf1;
+    border-radius: 8px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    background: #ccfbf1;
+    color: var(--primary);
+    padding: 12px;
+    text-align: left;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+td {
+    padding: 10px;
+    border-bottom: 1px solid #f0fdfa;
+    vertical-align: middle;
+}
+
+tr:hover {
+    background: #f8fafc;
+}
+
+.action-btn {
+    padding: 6px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 5px;
+    font-size: 1em;
+}
+
+.btn-edit {
+    background: #fde047;
+    color: #854d0e;
+}
+
+.btn-del {
+    background: #fca5a5;
+    color: #7f1d1d;
+}
+
+.tag-ok {
+    background: #dcfce7;
+    color: #166534;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 0.75rem;
+}
+
+.tag-low {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 0.75rem;
+}
+
+#log {
+    background: #134e4a;
+    color: #ccfbf1;
+    padding: 15px;
+    border-radius: 8px;
+    height: 100px;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 12px;
+    margin-top: 20px;
+    white-space: pre-wrap;
+}
+
+#errorList,
+#shortageList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    font-size: 0.9em;
+}
+
+#errorList li,
+#shortageList li {
+    padding: 8px;
+    border-bottom: 1px solid #fecaca;
+}
+
+#errorList li:last-child,
+#shortageList li:last-child {
+    border-bottom: none;
+}
+
+#errorList strong {
+    display: block;
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
+.modal {
+    background: white;
+    padding: 25px;
+    border-radius: 8px;
+    width: 400px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 8px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+/* --- ESTILO DOS ALERTAS (TOASTS) --- */
+.toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.toast {
+    background: #fff;
+    border-left: 6px solid #dc2626;
+    color: #333;
+    padding: 15px 20px;
+    border-radius: 4px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    min-width: 250px;
+    animation: slideIn 0.3s ease-out forwards;
+    display: flex;
+    flex-direction: column;
+}
+
+.toast strong {
+    color: #b91c1c;
+    font-size: 14px;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.toast span {
+    font-size: 13px;
+    color: #555;
+}
+
+
+/* --- NOVA NAV BAR INTEGRADA --- */
+/* NAVEGAÇÃO ESTILO TABS (PADRÃO V20) */
+header {
+    display: block;
+    border-bottom: 2px solid #ccfbf1;
+    margin-bottom: 20px;
+}
+
+.tab-nav {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    padding-bottom: 0;
+}
+
+.tab-link {
+    text-decoration: none;
+    padding: 10px 15px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #64748b;
+    border-radius: 8px 8px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid transparent;
+    border-bottom: none;
+    transition: all 0.2s;
+    background: #f8fafc;
+    margin-bottom: -2px;
+    /* Faz a aba "sentar" na linha do header */
+}
+
+.tab-link:hover {
+    background: #f0fdfa;
+    color: #0f766e;
+}
+
+/* Aba ativa: muda a cor e sobe uma borda verde */
+.tab-link.active {
+    background: #ffffff;
+    color: #0f766e;
+    border-color: #ccfbf1;
+    border-top: 3px solid #0f766e;
+    z-index: 10;
+}
+
+/* Ajuste no body para a Nav não sobrepor com padding */
+body {
+    padding: 0;
+    /* Removemos o padding do body para a nav encostar nas bordas */
+}
+
+/* Criamos um wrapper para o conteúdo manter o padding de 20px */
+.content-wrapper {
+    padding: 20px;
+}
+
+/* Estilo para a barra de rolagem do painel de erro */
+.panel-error::-webkit-scrollbar {
+    width: 8px;
+}
+
+.panel-error::-webkit-scrollbar-track {
+    background: #fef2f2;
+}
+
+.panel-error::-webkit-scrollbar-thumb {
+    background: #fca5a5;
+    border-radius: 4px;
+}
+
+.panel-error::-webkit-scrollbar-thumb:hover {
+    background: #ef4444;
+}
+
+/* Define uma altura máxima para a lista de produtos */
+.table-container {
+    max-height: 65vh;
+    /* Ocupa 65% da altura da tela do computador */
+    overflow-y: auto;
+    /* Ativa o scroll vertical */
+    margin-top: 20px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+
+/* Deixa o cabeçalho da tabela fixo no topo enquanto você desce a lista */
+thead th {
+    position: sticky;
+    top: 0;
+    background-color: #f8fafc;
+    /* Cor de fundo para não ficar transparente ao rolar */
+    z-index: 10;
+    box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* --- Estilos do Painel de Erros (SKUs Não Encontrados) --- */
+
+/* A lista em si */
+#errorList {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0;
+}
+
+/* O cartão de cada erro */
+.error-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    margin-bottom: 10px;
+    padding: 12px 15px;
+    border-radius: 8px;
+    border-left: 6px solid #e74c3c;
+    /* Vermelho erro */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s;
+}
+
+.error-card:hover {
+    transform: translateX(3px);
+    /* Efeito sutil ao passar o mouse */
+}
+
+/* Informações do SKU (Texto) */
+.error-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.sku-title {
+    font-weight: 700;
+    color: #2c3e50;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+}
+
+.sku-qtd {
+    color: #7f8c8d;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+
+
+/* --- Botões --- */
+.error-actions {
+    display: flex;
+    gap: 8px;
+    /* Espaço entre o ícone de copiar e o X */
+    align-items: center;
+}
+
+/* Botão Copiar (Apenas Ícone) */
+/* Botão Copiar (Apenas o Ícone Transparente) */
+.btn-copy {
+    background: transparent;
+    /* Torna o fundo do botão invisível */
+    border: none;
+    /* Remove a borda padrão do botão */
+    padding: 5px;
+    /* Pequena área de respiro para o clique */
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+    /* Adiciona uma animação suave */
+}
+
+/* Aumenta ligeiramente o ícone ao passar o mouse para indicar que é clicável */
+.btn-copy:hover {
+    transform: scale(1.1);
+    background: transparent;
+    /* Garante que o fundo continue transparente no hover */
+}
+
+/* Ajuste o tamanho da imagem se necessário */
+.btn-copy img {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+    /* Opcional: adiciona uma sombra leve apenas no ícone para destacar */
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+}
+
+/* Efeito ao passar o mouse */
+.btn-copy:hover {
+    transform: scale(1.15);
+    /* Aumenta 15% ao passar o mouse */
+}
+
+/* Efeito ao clicar */
+.btn-copy:active {
+    transform: scale(0.95);
+    /* Diminui levemente ao clicar */
+}
+
+/* MANTENHA O BTN-REMOVE IGUAL AO QUE VOCÊ JÁ TINHA */
+/* --- Botões (Área Container) --- */
+.error-actions {
+    display: flex;
+    gap: 4px;
+    /* Espaço entre o ícone de copiar e o de excluir */
+    align-items: center;
+}
+
+/* --- CLASSE PADRÃO PARA BOTÕES SÓ COM IMAGEM --- */
+/* Esta classe fará a mágica de tirar o fundo e a borda dos dois botões */
+.btn-icon-only {
+    background: transparent;
+    /* FUNDO INVISÍVEL */
+    border: none;
+    /* SEM BORDA PADRÃO */
+    padding: 5px;
+    /* Área de respiro para o clique */
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    /* Animação suave */
+}
+
+/* Efeito Hover (Zoom) igual para os dois */
+.btn-icon-only:hover {
+    transform: scale(1.2);
+    /* Aumenta 20% ao passar o mouse */
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2));
+    /* Adiciona uma sombrinha suave no hover */
+}
+
+/* Efeito Click (Diminui um pouco) */
+.btn-icon-only:active {
+    transform: scale(0.9);
+}
+
+/* --- Tamanho das Imagens --- */
+/* Ajuste o width/height se seus ícones ficarem muito grandes ou pequenos */
+
+/* Imagem do Copiar */
+.icon-copy-img {
+    width: 35px;
+    height: 35px;
+    object-fit: contain;
+}
+
+/* Nova Imagem do Excluir */
+.icon-delete-img {
+    width: 27px;
+    /* Se sua imagem nova for muito grande, diminua aqui (ex: 20px) */
+    height: 27px;
+    object-fit: contain;
+}
+
+@keyframes fadeOut {
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+}
