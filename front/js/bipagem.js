@@ -92,7 +92,7 @@ async function saveScan(code, status, msg) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 sku: code,
-                status: msg, 
+                status: msg,
                 motorista: motorista,
                 placa: placa,
                 fornecedor: "Padrão"
@@ -112,17 +112,61 @@ async function saveScan(code, status, msg) {
 }
 
 function updateStats() {
-    document.getElementById('c-total').innerText = sessionScans.length;
-    document.getElementById('c-ok').innerText = sessionScans.filter(s => s.status === 'ok').length;
-    document.getElementById('c-cancel').innerText = sessionScans.filter(s => s.status === 'cancel').length;
-    document.getElementById('c-dup').innerText = sessionScans.filter(s => s.status === 'dup').length;
+    try {
+        const totalEl = document.getElementById('c-total');
+        const okEl = document.getElementById('c-ok');
+        const cancelEl = document.getElementById('c-cancel');
+        const dupEl = document.getElementById('c-dup');
+
+        if (!totalEl || !okEl || !cancelEl || !dupEl) {
+            console.error("❌ Um ou mais elementos de estatísticas não encontrados no HTML!");
+            console.log("  Procurando por: #c-total, #c-ok, #c-cancel, #c-dup");
+            return;
+        }
+
+        const total = sessionScans.length;
+        const ok = sessionScans.filter(s => s.status === 'ok').length;
+        const cancel = sessionScans.filter(s => s.status === 'cancel').length;
+        const dup = sessionScans.filter(s => s.status === 'dup').length;
+
+        totalEl.innerText = total;
+        okEl.innerText = ok;
+        cancelEl.innerText = cancel;
+        dupEl.innerText = dup;
+
+        console.log(`📊 Estatísticas atualizadas: Total=${total}, OK=${ok}, Cancelado=${cancel}, Duplicado=${dup}`);
+    } catch (error) {
+        console.error("❌ Erro ao atualizar estatísticas:", error);
+    }
 }
 
 function updateTable() {
-    const tbody = document.querySelector("#historyTable tbody");
-    tbody.innerHTML = sessionScans.slice(0, 10).map(s =>
-        `<tr><td>${s.code}</td><td style="color:${s.status === 'cancel' ? 'red' : (s.status === 'dup' ? 'orange' : 'green')}">${s.msg}</td><td>${s.time}</td></tr>`
-    ).join('');
+    try {
+        const tableBody = document.querySelector("#historyTable tbody");
+
+        if (!tableBody) {
+            console.error("❌ Elemento #historyTable tbody não encontrado no HTML!");
+            return;
+        }
+
+        if (sessionScans.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#999;">Nenhum registro</td></tr>';
+            return;
+        }
+
+        tableBody.innerHTML = sessionScans.slice(0, 10).map(s => {
+            const cor = s.status === 'cancel' ? 'red' : (s.status === 'dup' ? 'orange' : 'green');
+            return `<tr>
+                <td>${s.code}</td>
+                <td style="color:${cor}; font-weight:bold;">${s.msg}</td>
+                <td>${s.time}</td>
+            </tr>`;
+        }).join('');
+
+        console.log(`📋 Tabela atualizada com ${Math.min(sessionScans.length, 10)} registros visíveis`);
+    } catch (error) {
+        console.error("❌ Erro ao atualizar tabela:", error);
+    }
 }
 
 function clearData() {
@@ -188,9 +232,9 @@ document.addEventListener('keydown', (e) => {
     lastKeyTime = currentTime;
 
     if (e.key === "Enter") {
-        if (barcodeBuffer.length > 1) { 
+        if (barcodeBuffer.length > 1) {
             onScanSuccess(barcodeBuffer);
-            barcodeBuffer = ""; 
+            barcodeBuffer = "";
         }
     } else {
         if (e.key.length === 1) {
@@ -199,40 +243,123 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// 👇 AQUI: Função carregarHistorico com o endereço completo!
-async function carregarHistoricoBanco() {
+// 👇 AQUI: Função carregarHistorico com SUPORTE COMPLETO ao formato do banco!
+async function carregarDashboardLogistica() {
+    console.log("📊 Atualizando Dashboard de Logística...");
     try {
-        const response = await fetch(`${API_URL}/api/logistica/historico`);
+        const response = await fetch('http://localhost:3000/api/logistica/historico');
         const dados = await response.json();
 
-        sessionScans = [];
+        if (!dados || dados.length === 0) {
+            console.warn("⚠️ Nenhum dado de bipagem encontrado para hoje");
+            return;
+        }
 
-        dados.forEach(item => {
-            let statusCode = 'ok';
-            if (item.status === 'CANCELADO!') statusCode = 'cancel';
-            if (item.status === 'DUPLICADO') statusCode = 'dup';
+        console.log(`📦 Total de bipes do dia: ${dados.length}`);
 
-            sessionScans.push({
-                code: item.sku,
-                status: statusCode,
-                msg: item.status,
-                time: item.horario 
-            });
-        });
+        // 1. Atualizar o Total Bipado (VALOR REAL DO DIA)
+        const totalBipes = dados.length;
+        document.getElementById('totalBipesHoje').innerText = totalBipes;
+        console.log(`  ✓ Total bipado atualizado: ${totalBipes}`);
 
-        updateTable();
-        updateStats();
+        // 2. Calcular Assertividade (Liberados vs Total)
+        const liberados = dados.filter(item => {
+            const status = String(item.status || "").toUpperCase();
+            return status.includes('LIBERADO') || status === 'OK';
+        }).length;
 
-        console.log("✅ Histórico carregado do banco de dados!");
+        const taxa = totalBipes > 0 ? ((liberados / totalBipes) * 100).toFixed(1) : 0;
+        document.getElementById('taxaAssertividade').innerText = `${taxa}%`;
+        console.log(`  ✓ Assertividade: ${liberados}/${totalBipes} = ${taxa}%`);
+
+        // 3. Atualizar a Tabela de Auditoria (logTbody) - MOSTRAR TODOS OS REGISTROS COM SCROLL
+        const tbody = document.getElementById('logTbody');
+
+        if (!tbody) {
+            console.error("❌ Elemento #logTbody não encontrado!");
+            return;
+        }
+
+        const tabelaHTML = dados.map((item, index) => {
+            // Define a cor do status para facilitar a leitura
+            let corStatus = '#10b981'; // Verde para Liberado
+            const statusStr = String(item.status || "").toUpperCase();
+
+            if (statusStr.includes('CANCELADO')) corStatus = '#ef4444'; // Vermelho
+            else if (statusStr.includes('DUPLICADO')) corStatus = '#f59e0b'; // Laranja
+
+            const horario = item.horario || '--:--';
+            const sku = item.sku || 'N/A';
+            const status = item.status || 'Desconhecido';
+
+            return `
+                <tr style="border-bottom: 1px solid #f0f0f0;">
+                    <td style="padding: 8px; font-size: 0.9em;">${horario}</td>
+                    <td style="padding: 8px; font-size: 0.9em; font-weight: bold;">${sku}</td>
+                    <td style="padding: 8px; color: ${corStatus}; font-weight: bold;">${status}</td>
+                </tr>
+            `;
+        }).join('');
+
+        tbody.innerHTML = tabelaHTML;
+        console.log(`  ✓ Tabela atualizada com ${totalBipes} registros visíveis`);
+
+        // 4. Calcular Ritmo (Bipes na última hora)
+        const agora = new Date();
+        const umaHoraAtras = new Date(agora.getTime() - 60 * 60 * 1000);
+
+        const bipeUltimaHora = dados.filter(item => {
+            if (!item.horario) return false;
+
+            try {
+                const [horas, minutos, segundos] = item.horario.split(':').map(Number);
+                const horaBipe = new Date();
+                horaBipe.setHours(horas, minutos, segundos || 0);
+
+                return horaBipe >= umaHoraAtras && horaBipe <= agora;
+            } catch (e) {
+                return false;
+            }
+        }).length;
+
+        document.getElementById('ritmoBipagem').innerText = bipeUltimaHora;
+        console.log(`  ✓ Ritmo última hora: ${bipeUltimaHora} bipes`);
+
+        // 5. Atualizar cores do card de assertividade
+        const cardAssert = document.getElementById('cardAssertividade');
+        const txtStatus = document.getElementById('txtErroStatus');
+
+        if (cardAssert && txtStatus) {
+            if (taxa < 95) {
+                cardAssert.style.borderLeft = "5px solid #ef4444";
+                txtStatus.innerText = `⚠️ Atenção: ${(100 - taxa).toFixed(1)}% de erro`;
+                txtStatus.style.color = "#ef4444";
+            } else {
+                cardAssert.style.borderLeft = "5px solid #10b981";
+                txtStatus.innerText = "✅ Operação saudável";
+                txtStatus.style.color = "#10b981";
+            }
+        }
+
+        console.log("✅ Dashboard sincronizado com o MySQL!");
     } catch (erro) {
-        console.error("❌ Erro ao carregar histórico do banco:", erro);
+        console.error("❌ Erro ao alimentar analytics:", erro);
+        console.error("   Stack trace:", erro.stack);
     }
 }
+
+// Inicia a atualização quando a página carregar
+document.addEventListener('DOMContentLoaded', () => {
+    carregarDashboardLogistica();
+    // Atualiza automaticamente a cada 30 segundos para manter o dashboard vivo
+    setInterval(carregarDashboardLogistica, 30000);
+});
+
 
 const html5QrCode = new Html5Qrcode("reader");
 html5QrCode.start({ facingMode: "environment" }, { fps: 15, qrbox: { width: 250, height: 150 } }, onScanSuccess);
 
 window.onload = () => {
-    setTimeout(sincronizarDados, 1000); 
-    carregarHistoricoBanco();           
+    setTimeout(sincronizarDados, 1000);
+    carregarHistoricoBanco();
 };

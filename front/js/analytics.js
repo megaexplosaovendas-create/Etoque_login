@@ -714,7 +714,7 @@ async function renderizarTop10() {
         // 2. BUSCA OS DADOS DO BANCO (VIA API)
         console.log("🔍 Buscando vendas do banco de dados...");
         const response = await fetch(`/api/vendas?t=${Date.now()}`);
-
+        
         if (!response.ok) {
             throw new Error(`Erro na requisição: ${response.status}`);
         }

@@ -1,159 +1,186 @@
 body {
-            font-family: 'Segoe UI', sans-serif;
-            padding: 20px;
-            background-color: #f4f7f6;
-            text-align: center;
-        }
+    font-family: 'Segoe UI', sans-serif;
+    padding: 20px;
+    background-color: #f4f7f6;
+    text-align: center;
+}
 
-        .container {
-            max-width: 850px;
-            margin: 0 auto;
-            background: white;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        }
+.container {
+    max-width: 850px;
+    margin: 0 auto;
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
 
-        /* Painel de Contagem */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-            margin-bottom: 20px;
-        }
+/* Painel de Contagem */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
 
-        .stat-card {
-            padding: 15px;
-            border-radius: 10px;
-            color: white;
-            font-weight: bold;
-        }
+.stat-card {
+    padding: 15px;
+    border-radius: 10px;
+    color: white;
+    font-weight: bold;
+}
 
-        .stat-total {
-            background-color: #2c3e50;
-        }
+.stat-total {
+    background-color: #2c3e50;
+}
 
-        .stat-ok {
-            background-color: #27ae60;
-        }
+.stat-ok {
+    background-color: #27ae60;
+}
 
-        .stat-cancel {
-            background-color: #e74c3c;
-        }
+.stat-cancel {
+    background-color: #e74c3c;
+}
 
-        .stat-dup {
-            background-color: #f39c12;
-        }
+.stat-dup {
+    background-color: #f39c12;
+}
 
-        .stat-val {
-            display: block;
-            font-size: 1.8rem;
-        }
+.stat-val {
+    display: block;
+    font-size: 1.8rem;
+}
 
-        .btn {
-            padding: 14px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: bold;
-            transition: 0.3s;
-            margin: 5px;
-        }
+.btn {
+    padding: 14px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    transition: 0.3s;
+    margin: 5px;
+}
 
-        .btn-sync {
-            background-color: #6f42c1;
-            color: white;
-            width: 100%;
-        }
+.btn-sync {
+    background-color: #6f42c1;
+    color: white;
+    width: 100%;
+}
 
-        .btn-pdf {
-            background-color: #e74c3c;
-            color: white;
-            flex: 2;
-        }
+.btn-pdf {
+    background-color: #e74c3c;
+    color: white;
+    flex: 2;
+}
 
-        .btn-clear {
-            background-color: #95a5a6;
-            color: white;
-            flex: 1;
-        }
+.btn-clear {
+    background-color: #95a5a6;
+    color: white;
+    flex: 1;
+}
 
-        #result-box {
-            padding: 30px;
-            margin: 20px 0;
-            border-radius: 10px;
-            color: white;
-            font-size: 1.8rem;
-            font-weight: bold;
-            min-height: 80px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
+#result-box {
+    padding: 30px;
+    margin: 20px 0;
+    border-radius: 10px;
+    color: white;
+    font-size: 1.8rem;
+    font-weight: bold;
+    min-height: 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
 
-        .bg-idle {
-            background-color: #bdc3c7;
-        }
+.bg-idle {
+    background-color: #bdc3c7;
+}
 
-        .bg-ok {
-            background-color: #2ecc71;
-        }
+.bg-ok {
+    background-color: #2ecc71;
+}
 
-        .bg-cancel {
-            background-color: #e74c3c;
-        }
+.bg-cancel {
+    background-color: #e74c3c;
+}
 
-        .bg-dup {
-            background-color: #f1c40f;
-            color: #333 !important;
-        }
+.bg-dup {
+    background-color: #f1c40f;
+    color: #333 !important;
+}
 
-        #reader {
-            width: 100%;
-            border-radius: 10px;
-            overflow: hidden;
-            background: #000;
-        }
+#reader {
+    width: 100%;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #000;
+}
 
-        .driver-info {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 10px;
-            margin: 20px 0;
-            padding: 15px;
-            background: #f9f9f9;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-        }
+.driver-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin: 20px 0;
+    padding: 15px;
+    background: #f9f9f9;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
 
-        .driver-info input {
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
+.driver-info input {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 25px;
-        }
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 25px;
+}
 
-        th,
-        td {
-            padding: 12px;
-            border-bottom: 1px solid #eee;
-            text-align: left;
-        }
+th,
+td {
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+    text-align: left;
+}
 
-        th {
-            background-color: #f8f9fa;
-        }
+th {
+    background-color: #f8f9fa;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
 
-        /* Indicador visual de scanner */
-        .scanner-mode {
-            font-size: 0.8rem;
-            color: #666;
-            margin-top: 5px;
-        }
+/* Estilo para tabela com scroll - Histórico de Bipes */
+#historyTable {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+
+#historyTable tbody {
+    display: block;
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+#historyTable thead {
+    display: block;
+}
+
+#historyTable tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+}
+
+/* Indicador visual de scanner */
+.scanner-mode {
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 5px;
+}

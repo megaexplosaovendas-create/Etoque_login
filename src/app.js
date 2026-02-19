@@ -49,7 +49,7 @@ app.use(session({
     store: mySessionStore,
     resave: false,
     saveUninitialized: false,
-    cookie: { 
+    cookie: {
         maxAge: 1000 * 60 * 60 * 24 // 1 dia de duração do login
     }
 }));
@@ -147,14 +147,14 @@ app.post('/api/login', async (req, res) => {
         }
 
         console.log("✅ Usuário encontrado. Verificando senha...");
-        
+
         // Verifica a senha
         const senhaValida = await bcrypt.compare(password, user.password);
         console.log(`🔑 A senha bate? ${senhaValida ? "SIM" : "NÃO"}`);
 
         if (senhaValida) {
             console.log("🚀 Login autorizado! Atualizando banco...");
-            
+
             await user.update({ last_login: new Date() });
             registrarLog(user.username, 'LOGIN', 'Acesso realizado.');
 
@@ -201,8 +201,8 @@ app.post('/api/logout', async (req, res) => {
             if (err) {
                 return res.status(500).json({ success: false, message: "Erro ao fechar sessão" });
             }
-            
-            res.clearCookie('connect.sid'); 
+
+            res.clearCookie('connect.sid');
             return res.json({ success: true, message: "Logout realizado e registrado!" });
         });
 
@@ -228,7 +228,7 @@ async function registrarLog(usuario, acao, detalhes) {
                 type: sequelize.QueryTypes.INSERT
             }
         );
-        
+
         console.log(`📝 Log gravado [Brasília]: ${acao}`);
     } catch (err) {
         console.error("❌ Erro ao registrar log:", err.message);
@@ -608,7 +608,7 @@ app.put('/api/produtos/archive/:id', async (req, res) => {
     try {
         const productId = req.params.id;
         // 🟢 Pegamos o usuário que veio do Frontend
-        const { usuario } = req.body; 
+        const { usuario } = req.body;
 
         console.log(`📥 Recebido pedido para arquivar: ${productId} por ${usuario}`);
 
@@ -672,7 +672,7 @@ app.get('/api/products/search', async (req, res) => {
 app.post('/api/add', async (req, res) => {
     try {
         const { nome_produto, item_id, localizacao, estoque_atual } = req.body;
-        
+
         // 👇 Tenta pegar do Link (query) OU do Corpo (body)
         const usuario = req.query.usuario || req.body.usuario || 'Sistema';
 
@@ -693,7 +693,7 @@ app.post('/api/add', async (req, res) => {
 app.put('/api/edit/:item_id', async (req, res) => {
     try {
         const { item_id } = req.params;
-        
+
         // 1. Pega os dados do produto do corpo
         const { nome_produto, localizacao, estoque_atual } = req.body;
 
@@ -703,10 +703,10 @@ app.put('/api/edit/:item_id', async (req, res) => {
 
         // 2. Atualiza o banco
         const [linhasAfetadas] = await Product.update(
-            { 
-                nome_produto: nome_produto, 
-                localizacao: localizacao, 
-                estoque_atual: estoque_atual 
+            {
+                nome_produto: nome_produto,
+                localizacao: localizacao,
+                estoque_atual: estoque_atual
             },
             { where: { item_id: item_id } }
         );
@@ -714,10 +714,10 @@ app.put('/api/edit/:item_id', async (req, res) => {
         if (linhasAfetadas > 0) {
             // 3. Usa o 'usuarioFinal' que garantimos que não está vazio
             await registrarLog(usuarioFinal, 'EDITAR_PRODUTO', `Editou item: ${nome_produto} (ID: ${item_id}) | Estoque: ${estoque_atual}`);
-            
+
             return res.json({ success: true, message: "Produto atualizado!" });
         }
-        
+
         res.status(404).json({ success: false, message: "Produto não encontrado" });
 
     } catch (error) {
@@ -737,7 +737,7 @@ app.delete('/api/delete/:item_id', async (req, res) => {
         const usuarioFinal = req.query.usuario || req.body.usuario || 'Sistema';
 
         const product = await Product.findOne({ where: { item_id } });
-        
+
         if (!product) {
             return res.status(404).json({ success: false, message: "Não encontrado" });
         }
@@ -759,10 +759,10 @@ app.delete('/api/delete/:item_id', async (req, res) => {
 app.post('/api/log-operacao', async (req, res) => {
     try {
         const { usuario, acao, detalhes } = req.body;
-        
+
         // Grava o log no MySQL
         await registrarLog(usuario || 'Desconhecido', acao, detalhes);
-        
+
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false });
@@ -773,10 +773,10 @@ app.post('/api/log-operacao', async (req, res) => {
 app.post('/api/log-operacao', async (req, res) => {
     try {
         const { usuario, acao, detalhes } = req.body;
-        
+
         // Aqui sim, chamamos a função que escreve no MySQL
         await registrarLog(usuario, acao, detalhes);
-        
+
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false });
@@ -787,11 +787,11 @@ app.post('/api/log-operacao', async (req, res) => {
 // 👇 CORREÇÃO: Usamos 'app' e adicionamos '/api'
 app.post('/api/log-saida', async (req, res) => {
     const { usuario, acao, detalhes } = req.body;
-    
+
     // Chama a função registrarLog que já existe no seu app.js
     // (O 'await' é bom para garantir que dê tempo de salvar antes de fechar)
     await registrarLog(usuario || 'Desconhecido', 'SAIDA_SISTEMA', 'Usuário fechou o navegador');
-    
+
     res.status(200).send('OK');
 });
 
@@ -799,7 +799,7 @@ app.post('/api/log-saida', async (req, res) => {
 app.post('/logistica/registrar', async (req, res) => {
     try {
         const { sku, status, motorista, placa, fornecedor } = req.body;
-        
+
         // Pega data e hora exatas do momento da bipagem
         const agora = new Date();
         const dataHoje = agora.toISOString().split('T')[0];
@@ -827,12 +827,18 @@ app.post('/logistica/registrar', async (req, res) => {
 // Rota para buscar o histórico de bipagens
 app.get('/api/logistica/historico', async (req, res) => {
     try {
-        // Busca os últimos 50 registros no banco, do mais novo para o mais antigo
+        // ✅ REMOVIDO: limit: 50 - Agora busca TODOS os registros do dia
+        // (Se quiser limitar por data, use o filtro abaixo)
+        const hoje = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
+
         const historico = await BipagemHistorico.findAll({
-            order: [['id', 'DESC']],
-            limit: 50
+            where: {
+                data_registro: hoje // Filtra apenas registros de HOJE
+            },
+            order: [['id', 'DESC']] // Mais recentes primeiro
         });
-        
+
+        console.log(`📊 Histórico de hoje (${hoje}): ${historico.length} registros total`);
         res.json(historico);
     } catch (error) {
         console.error("Erro ao buscar histórico:", error);
@@ -841,6 +847,24 @@ app.get('/api/logistica/historico', async (req, res) => {
 });
 
 
+
+app.get('/api/logistica/contagem-hoje', async (req, res) => {
+    try {
+        const hoje = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
+
+        const contagem = await BipagemHistorico.count({
+            where: {
+                data_registro: hoje // Filtra pela coluna de data que criamos
+            }
+        });
+
+        console.log(`📊 Contagem de hoje (${hoje}): ${contagem}`);
+        res.json({ total: contagem }); // Retorna um objeto JSON
+    } catch (error) {
+        console.error("Erro na contagem:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
 
 
 // 2. ROTAS DE API
