@@ -128,7 +128,16 @@ body {
     background: rgba(0, 0, 0, 0.1);
 }
 
+/* Defina a largura mini como padrão para evitar saltos visuais */
+.sidebar {
+    width: 80px; /* Largura mini */
+    transition: width 0.3s ease;
+}
 
+/* Só expande se a classe 'collapsed' NÃO estiver presente ou se você usar uma classe 'expanded' */
+.sidebar.expanded {
+    width: 270px;
+}
 
 
 h1 {
@@ -586,8 +595,8 @@ body {
 
 /* Define uma altura máxima para a lista de produtos */
 .table-container {
-    max-height: 65vh;
-    /* Ocupa 65% da altura da tela do computador */
+    max-height: 94vh;
+    /* Ocupa 94% da altura da tela do computador */
     overflow-y: auto;
     /* Ativa o scroll vertical */
     margin-top: 20px;
@@ -1031,4 +1040,10 @@ thead th {
 .status-empty {
     background: #fee2e2;
     color: #b91c1c;
+}
+
+.analytics-section {
+    /* Usa a variável definida no global */
+    margin-left: calc(var(--sidebar-mini) + var(--gap-content)) !important;
+    transition: margin-left 0.3s ease;
 }

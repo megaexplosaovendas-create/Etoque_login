@@ -382,7 +382,7 @@ function render() {
     // Se não existir tbody ou os filtros nesta página, interrompe a função
     // para não quebrar o restante do script.
     if (!tbody || !searchInput || !filterSelect) {
-        return; 
+        return;
     }
 
     const termo = searchInput.value.toLowerCase();
@@ -413,9 +413,9 @@ function render() {
         const tr = document.createElement('tr');
 
         if (p.estoque_atual <= 0) {
-            tr.style.backgroundColor = "#ff8888"; 
+            tr.style.backgroundColor = "#ff8888";
         } else if (p.estoque_atual < 6) {
-            tr.style.backgroundColor = "#fffbeb"; 
+            tr.style.backgroundColor = "#fffbeb";
         }
 
         let statusColor = p.estoque_atual <= 0 ? "#ef4444" : (p.estoque_atual < 6 ? "#f59e0b" : "#10b981");
@@ -1192,25 +1192,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 })
-/*
-window.deleteProduct = async function (id) {
-    if (!confirm(`📦 Deseja arquivar o produto ${id}?\nEle sumirá da lista, mas os dados no Analytics serão preservados.`)) return;
-
-    try {
-        const res = await fetch(`${API_URL}/archive/${encodeURIComponent(id)}`, {
-            method: 'PUT' // Mudamos de DELETE para PUT
-        });
-
-        if (res.ok) {
-            showToast('Produto arquivado!', 'success');
-            carregarProdutos(); // Recarrega a lista
-        }
-    } catch (error) {
-        console.error("Erro:", error);
-    }
-};
-
-*/
 
 
 // 👇 SCRIPT PARA LOGAR SAÍDA/FECHAMENTO DE ABA 👇
@@ -1233,11 +1214,40 @@ window.addEventListener('beforeunload', (event) => {
 
 ;
 
+document.addEventListener('DOMContentLoaded', () => {
+    const sidebar = document.getElementById('sidebar');
+    const content = document.querySelector('.analytics-section');
+
+    // 1. Verifica se existe uma preferência salva
+    const sidebarState = localStorage.getItem('sidebar-collapsed');
+
+    // 2. Se não houver nada salvo, definimos como 'true' (minimizada) por padrão
+    if (sidebarState === null || sidebarState === 'true') {
+        sidebar.classList.add('collapsed');
+        sidebar.classList.remove('expanded');
+        localStorage.setItem('sidebar-collapsed', 'true');
+    } else {
+        sidebar.classList.remove('collapsed');
+        sidebar.classList.add('expanded');
+    }
+
+    // 3. Função para salvar o estado quando você clicar no botão de fechar/abrir
+    window.toggleSidebar = function () {
+        const isCurrentlyCollapsed = sidebar.classList.toggle('collapsed');
+        sidebar.classList.toggle('expanded', !isCurrentlyCollapsed);
+
+        // Salva a escolha para todas as outras páginas
+        localStorage.setItem('sidebar-collapsed', isCurrentlyCollapsed);
+
+        console.log("💾 Preferência de layout salva:", isCurrentlyCollapsed ? "Minimizado" : "Expandido");
+    };
+});
+
 /* front/js/app.js */
 
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Busca os dados que o seu backend enviou no Login
-    const userLogado = JSON.parse(localStorage.getItem('usuario')); 
+    const userLogado = JSON.parse(localStorage.getItem('usuario'));
 
     if (userLogado) {
         // 2. Preenche o Card da Sidebar (Estilo Eva Murphy)
@@ -1248,7 +1258,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Usando 'username' e 'role' que vêm do seu Model User
         if (sbName) sbName.innerText = userLogado.username;
         if (sbRole) sbRole.innerText = userLogado.role;
-        
+
         // 3. Preenche a Saudação no Header ("Olá, Username")
         const headerGreeting = document.getElementById('sessao-nome-saudacao');
         if (headerGreeting) headerGreeting.innerText = userLogado.username;

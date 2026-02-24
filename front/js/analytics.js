@@ -494,6 +494,10 @@ function renderizarGraficoChartJS(historico) {
     });
 }
 
+
+
+
+
 // ======================================================
 // 3. FUNÇÕES AUXILIARES (Segurança)
 // ======================================================
@@ -1209,7 +1213,6 @@ function filtrarCanal(canal) {
 
     setTexIfExist('skuFaturamento', faturamentoCanal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
 }
-
 
 
 
