@@ -375,8 +375,18 @@ function render() {
 
 function render() {
     const tbody = document.getElementById('tbody');
-    const termo = document.getElementById('search').value.toLowerCase();
-    const filtroStatus = document.getElementById('filterOrder').value;
+    const searchInput = document.getElementById('search');
+    const filterSelect = document.getElementById('filterOrder');
+
+    // VERIFICAÇÃO DE SEGURANÇA:
+    // Se não existir tbody ou os filtros nesta página, interrompe a função
+    // para não quebrar o restante do script.
+    if (!tbody || !searchInput || !filterSelect) {
+        return; 
+    }
+
+    const termo = searchInput.value.toLowerCase();
+    const filtroStatus = filterSelect.value;
 
     tbody.innerHTML = '';
 
@@ -392,7 +402,7 @@ function render() {
         filtrados = filtrados.filter(p => p.estoque_atual > 0 && p.estoque_atual < 6);
     }
 
-    // Ordenação (mantendo a lógica anterior)
+    // Ordenação
     if (filtroStatus === 'nome') {
         filtrados.sort((a, b) => a.nome_produto.localeCompare(b.nome_produto));
     } else if (filtroStatus === 'maior_estoque') {
@@ -402,11 +412,10 @@ function render() {
     filtrados.forEach(p => {
         const tr = document.createElement('tr');
 
-        // --- RECUPERANDO AS CORES DE FUNDO DA LINHA ---
         if (p.estoque_atual <= 0) {
-            tr.style.backgroundColor = "#ff8888"; // Vermelho bem clarinho para esgotado
+            tr.style.backgroundColor = "#ff8888"; 
         } else if (p.estoque_atual < 6) {
-            tr.style.backgroundColor = "#fffbeb"; // Amarelo clarinho para repor
+            tr.style.backgroundColor = "#fffbeb"; 
         }
 
         let statusColor = p.estoque_atual <= 0 ? "#ef4444" : (p.estoque_atual < 6 ? "#f59e0b" : "#10b981");
@@ -1219,5 +1228,35 @@ window.addEventListener('beforeunload', (event) => {
             body: dados,
             keepalive: true // <--- ISSO É O QUE FAZ FUNCIONAR
         });
+    }
+});
+
+;
+
+/* front/js/app.js */
+
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Busca os dados que o seu backend enviou no Login
+    const userLogado = JSON.parse(localStorage.getItem('usuario')); 
+
+    if (userLogado) {
+        // 2. Preenche o Card da Sidebar (Estilo Eva Murphy)
+        const sbName = document.getElementById('sb-user-name');
+        const sbRole = document.getElementById('sb-user-role');
+        const sbPhoto = document.getElementById('sb-user-photo');
+
+        // Usando 'username' e 'role' que vêm do seu Model User
+        if (sbName) sbName.innerText = userLogado.username;
+        if (sbRole) sbRole.innerText = userLogado.role;
+        
+        // 3. Preenche a Saudação no Header ("Olá, Username")
+        const headerGreeting = document.getElementById('sessao-nome-saudacao');
+        if (headerGreeting) headerGreeting.innerText = userLogado.username;
+
+        // 4. Foto: Como seu banco ainda não tem a coluna 'foto', 
+        // usamos uma padrão ou a que você definir no localStorage
+        if (sbPhoto && userLogado.photo_url) {
+            sbPhoto.src = userLogado.photo_url;
+        }
     }
 });

@@ -55,77 +55,7 @@
             </form>
         </div>
     </div>
-
-
-
-    <script>
-        // 1. Verificação imediata: Se já logou, manda pra home
-        if (sessionStorage.getItem('wms_logado') === 'true') {
-            window.location.href = 'index.html';
-        }
-
-        // 2. Lógica de envio do formulário (Uma única vez!)
-        document.getElementById('loginForm').addEventListener('submit', async function (e) {
-            e.preventDefault();
-
-            const user = document.getElementById('user').value;
-            const pass = document.getElementById('password').value;
-
-            try {
-                // Chamada para o seu servidor Node.js
-                const response = await fetch('http://localhost:3000/api/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: user, password: pass })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    // 1. Salva o "crachá" do usuário
-                    sessionStorage.setItem('wms_logado', 'true');
-                    sessionStorage.setItem('wms_role', data.role);
-
-                    // 2. Link direto para o Index
-                    window.location.href = 'index.html';
-                } else {
-                    alert('Erro: ' + (data.message || 'Credenciais inválidas'));
-                }
-            } catch (err) {
-                console.error('Erro na conexão:', err);
-                alert('O servidor está desligado ou inacessível.');
-            }
-        });
-
-        document.addEventListener('DOMContentLoaded', () => {
-            // 1. Acha o botão de entrar pelo texto ou tipo
-            const btnEntrar = document.querySelector('button[type="submit"]');
-
-            // 2. Tenta achar o campo onde a pessoa digitou o nome.
-            // (Tenta achar pelo ID 'usuario', 'user', 'email' ou pega o primeiro input de texto da tela)
-            const campoUsuario = document.getElementById('usuario') ||
-                document.getElementById('user') ||
-                document.querySelector('input[name="usuario"]') ||
-                document.querySelector('input[type="text"]');
-
-            if (btnEntrar && campoUsuario) {
-                btnEntrar.addEventListener('click', () => {
-                    const nomeDigitado = campoUsuario.value;
-
-                    // Se o campo não estiver vazio, SALVA O NOME!
-                    if (nomeDigitado.trim() !== "") {
-                        sessionStorage.setItem('username', nomeDigitado);
-
-                        // Garante que o sistema saiba que está logado
-                        sessionStorage.setItem('wms_logado', 'true');
-
-                        console.log("✅ Usuário salvo na memória:", nomeDigitado);
-                    }
-                });
-            }
-        });
-
-    </script>
+    <script src="js/login.js"></script>
 </body>
 
 </html>

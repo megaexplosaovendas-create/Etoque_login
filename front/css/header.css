@@ -1,0 +1,156 @@
+/* header.css */
+
+.main-header {
+    margin: 25px 25px 0 25px; /* Margem: Cima, Direita, Baixo(0), Esquerda */
+    background: white;
+    border-radius: 12px;
+    padding: 15px 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+/* Esquerda: Saudação */
+.header-greeting h1 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+}
+
+/* Direita: Grupo de ações */
+.header-right-actions {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+}
+
+/* Caixa de Busca */
+.search-box-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0 15px;
+    width: 300px;
+    transition: all 0.2s;
+}
+
+.search-box-container:focus-within {
+    border-color: #0f766e; /* Seu verde primário */
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
+}
+
+.search-icon-inside {
+    color: #94a3b8;
+    font-size: 20px !important;
+}
+
+.search-input-header {
+    border: none;
+    background: transparent;
+    padding: 10px;
+    width: 100%;
+    outline: none;
+    font-size: 0.9rem;
+    color: #475569;
+}
+
+/* Notificações */
+.notification-icons-area {
+    display: flex;
+    gap: 15px;
+}
+
+.icon-wrapper-header {
+    position: relative;
+    color: #64748b;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.icon-wrapper-header:hover { color: #0f766e; }
+
+.notif-dot {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 8px;
+    height: 8px;
+    background: #ef4444;
+    border: 2px solid #fff;
+    border-radius: 50%;
+}
+
+/* Perfil do Usuário */
+.user-profile-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-left: 1px solid #f1f5f9;
+    padding-left: 20px;
+}
+
+.user-avatar-img {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.user-info-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-name-text {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.user-role-text {
+    font-size: 0.75rem;
+    color: #94a3b8;
+}
+
+/* header.css */
+
+.header-greeting {
+    display: flex;
+    align-items: center;
+    gap: 20px; /* Espaço entre o botão e o "Olá, Jone" */
+}
+
+.btn-sidebar-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Espaço entre o ícone e o texto "Menu" */
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 8px 16px;
+    border-radius: 10px;
+    color: #64748b;
+    cursor: pointer;
+    font-weight: 600;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+
+.btn-sidebar-toggle:hover {
+    background-color: #f1f5f9;
+    color: #0f766e; /* Seu verde primário */
+    border-color: #cbd5e1;
+}
+
+.btn-sidebar-toggle .material-icons {
+    font-size: 20px;
+}
+
+.btn-text {
+    font-size: 0.9rem;
+}

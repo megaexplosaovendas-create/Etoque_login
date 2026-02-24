@@ -1,25 +1,30 @@
+/* front/js/main.js */
+
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Pega as informações que o Login salvou
+    // 1. Pega as informações da sessão (o "crachá")
     const logado = sessionStorage.getItem('wms_logado');
     const role = sessionStorage.getItem('wms_role');
+    const username = sessionStorage.getItem('wms_username');
 
-    // 2. SEGURANÇA: Se não estiver logado, volta para o login na hora
+    // 2. SEGURANÇA: Se não estiver logado, barra o acesso
     if (logado !== 'true') {
         window.location.href = 'login.html';
         return;
     }
 
-    // 3. CONTROLE DE ACESSO: Se for estoquista, esconde o que é proibido
+    // 3. IDENTIDADE: Troca o "Carregando.." pelos dados reais
+    const nameElement = document.getElementById('sb-user-name');
+    const roleElement = document.getElementById('sb-user-role');
+
+    if (nameElement) nameElement.innerText = username || "Usuário";
+    if (roleElement) roleElement.innerText = role || "Acessando...";
+
+    // 4. CONTROLE DE ACESSO: Restrições para Estoquista
     if (role === 'estoquista') {
         const btnAnalytics = document.getElementById('btn-analytics');
+        if (btnAnalytics) btnAnalytics.remove();
         
-        if (btnAnalytics) {
-            btnAnalytics.remove(); // Remove o botão do código
-            console.log("🔒 Acesso Restrito: Botão de Analytics removido.");
-        }
-
-        // Você também pode esconder botões de 'Deletar' ou 'Editar'
         document.querySelectorAll('.btn-admin-only').forEach(el => el.remove());
+        console.log("🔒 Permissões de Estoquista aplicadas.");
     }
 });
-

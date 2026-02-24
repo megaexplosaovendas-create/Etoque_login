@@ -1,4 +1,4 @@
-// --- VARIÁVEIS GLOBAIS ---
+
 let trendChart, distributionChart, chartLogistica;
 let localInventory = [];
 let localHistory = {};
@@ -7,21 +7,32 @@ const META_DIARIA = 500;
 
 // --- INICIALIZAÇÃO E ESCUTAS ---
 
-// Escuta Estoque e Histórico (Firebase)
-db.ref('estoque_v20').on('value', (snapshot) => {
-    const data = snapshot.val();
-    localInventory = (data && data.produtos) ? data.produtos : [];
-    localHistory = (data && data.historico) ? data.historico : {}; -
-        refreshActiveSection();
-});
+// DELETE todo o bloco que começa com db.ref('estoque_v20').on(...)
+// E COLOQUE ESTE:
 
-// Escuta Bipagem (Logs)
-db.ref('log_bipagem').orderByChild('data_hora').limitToLast(100).on('value', (snapshot) => {
-    localLogs = [];
-    snapshot.forEach(child => { localLogs.unshift(child.val()); });
+function carregarDadosAnalytics() {
+    try {
+        const dadosSalvos = localStorage.getItem('estoque_v20');
+        if (dadosSalvos) {
+            const parsed = JSON.parse(dadosSalvos);
+            // Ajuste os nomes das variáveis para o que o seu analytics.js espera
+            window.localInventory = parsed.produtos || [];
+            window.localHistory = parsed.historico || {};
+            
+            console.log("✅ Dados carregados para Analytics");
+            
+            // Força a atualização da tela
+            if (typeof refreshActiveSection === "function") {
+                refreshActiveSection();
+            }
+        }
+    } catch (e) {
+        console.error("Erro ao carregar dados locais:", e);
+    }
+}
 
-    refreshActiveSection();
-});
+// Chama ao carregar a página
+document.addEventListener('DOMContentLoaded', carregarDadosAnalytics);
 
 var vendasHistorico = [];
 window.vendasHistorico = vendasHistorico;
@@ -57,15 +68,36 @@ window.addEventListener('load', () => {
 
 // --- NAVEGAÇÃO ---
 
+// Função para mostrar a seção correta
 function showSection(sectionId) {
-    // Alterna visibilidade das seções
-    document.querySelectorAll('.analytics-section').forEach(s => s.classList.remove('active'));
-    document.getElementById(sectionId).classList.add('active');
+    // 1. Esconde todas as seções
+    document.querySelectorAll('.analytics-section, section').forEach(sec => {
+        sec.style.display = 'none';
+        sec.classList.remove('active');
+    });
 
-    // Atualiza os dados da seção aberta
-    refreshActiveSection();
+    // 2. Mostra a seção desejada
+    const target = document.getElementById(sectionId);
+    if (target) {
+        target.style.display = 'block';
+        target.classList.add('active');
+        console.log("📍 Navegando para:", sectionId);
+    } else {
+        console.error("❌ Seção não encontrada:", sectionId);
+    }
 }
 
+// Escuta mudanças na URL (caso você use links com #)
+window.addEventListener('hashchange', () => {
+    const section = window.location.hash.replace('#', '');
+    if (section) showSection(section);
+});
+
+// Executa ao carregar a página
+document.addEventListener('DOMContentLoaded', () => {
+    const initialSection = window.location.hash.replace('#', '') || 'executivo';
+    showSection(initialSection);
+});
 function refreshActiveSection() {
     const activeSection = document.querySelector('.analytics-section.active').id;
     const selDate = document.getElementById('reportDate').value || getToday();
@@ -645,29 +677,6 @@ function calcularCurvaABC() {
 
 let ultimoLogCount = 0;
 
-function monitorarNovasExpedicoes() {
-    // Escuta apenas o último registro inserido no banco
-    db.ref('log_bipagem').limitToLast(1).on('value', (snapshot) => {
-        const logs = snapshot.val();
-        if (!logs) return;
-
-        // Pega a quantidade de itens no snapshot (geralmente 1 por causa do limit)
-        const currentCount = Object.keys(logs).length;
-
-        // Se o contador subiu, significa que um novo bipe entrou no sistema
-        if (ultimoLogCount > 0 && currentCount >= ultimoLogCount) {
-            console.log("⚡ Novo bipe detectado na expedição!");
-
-            // Aqui você dispara a atualização visual
-            if (typeof updateSecaoLogistica === "function") {
-                updateSecaoLogistica();
-            }
-
-            // Dica: Você pode adicionar um som de "beep" aqui para o supervisor ouvir
-        }
-        ultimoLogCount = currentCount;
-    });
-}
 
 
 // 1. DISPARAR BUSCA ASSIM QUE A PÁGINA CARREGAR
@@ -714,7 +723,7 @@ async function renderizarTop10() {
         // 2. BUSCA OS DADOS DO BANCO (VIA API)
         console.log("🔍 Buscando vendas do banco de dados...");
         const response = await fetch(`/api/vendas?t=${Date.now()}`);
-        
+
         if (!response.ok) {
             throw new Error(`Erro na requisição: ${response.status}`);
         }
@@ -1201,3 +1210,202 @@ function filtrarCanal(canal) {
     setTexIfExist('skuFaturamento', faturamentoCanal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
 }
 
+
+
+
+// ==========================================
+// DASHBOARD EXECUTIVO - LÓGICA DE PRODUTOS
+// ==========================================
+
+// 1. Títulos dinâmicos
+const titulosFiltroPT = {
+    'volume': 'Produtos Mais Vendidos (Top 5)',
+    'faturamento': 'Maior Faturamento Bruto',
+    'lucro': 'Produtos Mais Lucrativos',
+    'ruptura': 'Alerta de Ruptura (Baixo Estoque)',
+    'encalhados': 'Estoque Parado (Sem Saída)'
+};
+
+// 2. Simulador do Banco de Dados (Depois vamos trocar isso pelo fetch no Node.js)
+const dadosSimulados = {
+    'volume': [
+        { nome: "Fone Bluetooth Pro X", preco: "149,90", stat: "1.250 bipes", progresso: 85, corBarra: "#3b82f6", fundoImg: "#fef08a", img: "https://via.placeholder.com/150/fef08a/000000?text=Fone" },
+        { nome: "Smartwatch Active 3", preco: "299,00", stat: "980 bipes", progresso: 65, corBarra: "#3b82f6", fundoImg: "#e0f2fe", img: "https://via.placeholder.com/150/e0f2fe/000000?text=Relogio" },
+        { nome: "Carregador Turbo 20W", preco: "45,50", stat: "850 bipes", progresso: 50, corBarra: "#3b82f6", fundoImg: "#f1f5f9", img: "https://via.placeholder.com/150/f1f5f9/000000?text=Carregador" }
+    ],
+    'faturamento': [
+        { nome: "Notebook Gamer RTX", preco: "5.499,00", stat: "R$ 65K gerados", progresso: 95, corBarra: "#10b981", fundoImg: "#dcfce7", img: "https://via.placeholder.com/150/dcfce7/000000?text=Notebook" },
+        { nome: "Monitor Ultrawide", preco: "1.299,00", stat: "R$ 38K gerados", progresso: 70, corBarra: "#10b981", fundoImg: "#f3e8ff", img: "https://via.placeholder.com/150/f3e8ff/000000?text=Monitor" },
+        { nome: "Cadeira Ergonomica", preco: "850,00", stat: "R$ 25K gerados", progresso: 40, corBarra: "#10b981", fundoImg: "#ffedd5", img: "https://via.placeholder.com/150/ffedd5/000000?text=Cadeira" }
+    ],
+    'ruptura': [
+        { nome: "Mouse sem fio Ultra", preco: "89,90", stat: "Restam 2 unid.", progresso: 10, corBarra: "#ef4444", fundoImg: "#fee2e2", img: "https://via.placeholder.com/150/fee2e2/000000?text=Mouse" },
+        { nome: "Teclado Mecânico RGB", preco: "249,00", stat: "Restam 5 unid.", progresso: 15, corBarra: "#ef4444", fundoImg: "#fef3c7", img: "https://via.placeholder.com/150/fef3c7/000000?text=Teclado" }
+    ],
+    'encalhados': [
+        { nome: "Capa Tablet Antiga", preco: "15,00", stat: "30 dias sem venda", progresso: 0, corBarra: "#94a3b8", fundoImg: "#f1f5f9", img: "https://via.placeholder.com/150/f1f5f9/000000?text=Capa" },
+        { nome: "Cabo VGA 1m", preco: "10,00", stat: "45 dias sem venda", progresso: 0, corBarra: "#94a3b8", fundoImg: "#f8fafc", img: "https://via.placeholder.com/150/f8fafc/000000?text=Cabo" }
+    ],
+    'lucro': [
+        { nome: "Película de Vidro", preco: "25,00", stat: "85% de margem", progresso: 90, corBarra: "#8b5cf6", fundoImg: "#e0e7ff", img: "https://via.placeholder.com/150/e0e7ff/000000?text=Pelicula" },
+        { nome: "Pop Socket", preco: "12,00", stat: "80% de margem", progresso: 75, corBarra: "#8b5cf6", fundoImg: "#fae8ff", img: "https://via.placeholder.com/150/fae8ff/000000?text=Suporte" }
+    ]
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Sincroniza os dados do LocalStorage (já que não usamos mais Firebase)
+    if (typeof sincronizarDados === "function") sincronizarDados();
+
+    // 2. Define qual aba deve abrir primeiro
+    // Se a URL tiver #performance, abre ela. Se não tiver nada, abre 'executivo'
+    const secaoParaAbrir = window.location.hash.replace('#', '') || 'executivo';
+
+    // 3. Roda a função de trocar de tela
+    showSection(secaoParaAbrir);
+
+    // 4. Roda o seu filtro de produtos (o que você mandou)
+    if (typeof atualizarFiltroProdutos === "function") {
+        atualizarFiltroProdutos();
+    }
+    
+    console.log("🚀 Sistema V20 iniciado na seção:", secaoParaAbrir);
+});
+
+// 3. A Função Mágica que troca tudo
+function atualizarFiltroProdutos() {
+    const valorSelecionado = document.getElementById('filtroProdutosExecutivo').value;
+    const tituloElement = document.getElementById('tituloFiltroProduto');
+    const containerProdutos = document.getElementById('topProductsContainer');
+    
+    // Animação do Título
+    tituloElement.style.opacity = 0;
+    setTimeout(() => {
+        tituloElement.innerText = titulosFiltroPT[valorSelecionado];
+        tituloElement.style.opacity = 1;
+        tituloElement.style.transition = "opacity 0.3s ease";
+    }, 150);
+
+    // Esvazia o carrossel atual com um efeitinho de fade out
+    containerProdutos.style.opacity = 0;
+    
+    setTimeout(() => {
+        containerProdutos.innerHTML = ''; // Limpa os cards antigos
+        
+        // Pega a lista certa do nosso "banco de dados falso"
+        const produtosAtuais = dadosSimulados[valorSelecionado];
+
+        // Monta o HTML de cada card novo
+        produtosAtuais.forEach(prod => {
+            const cardHTML = `
+                <div class="product-card">
+                    <div class="product-img-box" style="background: ${prod.fundoImg};">
+                        <img src="${prod.img}" alt="${prod.nome}">
+                    </div>
+                    <div class="product-title">${prod.nome}</div>
+                    <div class="product-stats">
+                        <span class="product-price">R$ ${prod.preco}</span>
+                        <span>${prod.stat}</span>
+                    </div>
+                    <div class="product-progress-bg">
+                        <div class="product-progress-fill" style="width: ${prod.progresso}%; background-color: ${prod.corBarra};"></div>
+                    </div>
+                </div>
+            `;
+            // Injeta o card no container
+            containerProdutos.innerHTML += cardHTML;
+        });
+
+        // Mostra o carrossel novamente
+        containerProdutos.style.opacity = 1;
+        containerProdutos.style.transition = "opacity 0.4s ease";
+    }, 200); // Espera 200ms para a animação ficar suave
+}
+
+// Inicia com o filtro padrão ao carregar a página
+document.addEventListener('DOMContentLoaded', () => {
+    atualizarFiltroProdutos();
+});
+// Dicionário com os títulos em Português
+
+
+function atualizarFiltroProdutos() {
+    const valorSelecionado = document.getElementById('filtroProdutosExecutivo').value;
+    const tituloElement = document.getElementById('tituloFiltroProduto');
+
+    // Animação suave para trocar o título
+    tituloElement.style.opacity = 0;
+    setTimeout(() => {
+        tituloElement.innerText = titulosFiltroPT[valorSelecionado];
+        tituloElement.style.opacity = 1;
+        tituloElement.style.transition = "opacity 0.3s ease";
+    }, 150);
+
+    // Aqui no futuro vamos chamar a função que vai no Node.js buscar as fotos e dados reais!
+    console.log("Filtro alterado para:", valorSelecionado);
+}
+
+// Dicionário com os títulos baseados no valor do select
+const titulosFiltro = {
+    'volume': 'Most Selling Product',
+    'faturamento': 'Highest Revenue Products',
+    'lucro': 'Most Profitable Products',
+    'ruptura': 'Low Stock Alert (Restock)'
+};
+
+// Função chamada quando o usuário muda o filtro
+function atualizarFiltroProdutos() {
+    const valorSelecionado = document.getElementById('selectFiltroDash').value;
+    const tituloElement = document.getElementById('tituloFiltro');
+
+    // 1. Muda o título da esquerda com animação suave
+    tituloElement.style.opacity = 0;
+    setTimeout(() => {
+        tituloElement.innerText = titulosFiltro[valorSelecionado];
+        tituloElement.style.opacity = 1;
+        tituloElement.style.transition = "opacity 0.3s ease";
+    }, 150);
+
+    // 2. Chama a função para ir no MySQL buscar os dados correspondentes
+    // Como ainda vamos criar a rota do Node, vou chamar uma função simulada
+    renderizarCardsMocados(valorSelecionado);
+}
+
+// Função que desenha os cards na tela
+function renderizarCardsMocados(filtro) {
+    const container = document.getElementById('containerCarrosselProdutos');
+
+    // Simulando dados que viriam do seu MySQL
+    const produtosMock = [
+        { nome: "Rompi Berkancing", preco: 400.98, vendas: "1.2k", progresso: 80, corFundo: "#ffd54f", img: "https://freepngimg.com/thumb/headphones/2-2-headphones-png-file.png" },
+        { nome: "Blazzer assorted poc...", preco: 550.75, vendas: "900", progresso: 60, corFundo: "#f1f5f9", img: "https://freepngimg.com/thumb/sunglasses/25509-5-sunglasses-transparent.png" },
+        { nome: "Pattern top with knot", preco: 210.98, vendas: "719", progresso: 45, corFundo: "#f1f5f9", img: "https://freepngimg.com/thumb/camera/2-2-camera-transparent.png" },
+        { nome: "Basic Hoodie - blue", preco: 149.99, vendas: "512", progresso: 30, corFundo: "#f1f5f9", img: "https://freepngimg.com/thumb/lipstick/2-2-lipstick-png-hd.png" }
+    ];
+
+    // Limpa o container
+    container.innerHTML = '';
+
+    // Cria o HTML para cada produto
+    produtosMock.forEach(prod => {
+        container.innerHTML += `
+            <div class="card-prod">
+                <div class="img-box" style="background-color: ${prod.corFundo};">
+                    <img src="${prod.img}" alt="${prod.nome}">
+                </div>
+                <div class="prod-nome" title="${prod.nome}">${prod.nome}</div>
+                <div class="prod-info">
+                    <span class="prod-preco">$${prod.preco.toFixed(2)}</span>
+                    <span class="prod-vendas">${prod.vendas} sales</span>
+                </div>
+                <div class="barra-bg">
+                    <div class="barra-fill" style="width: ${prod.progresso}%;"></div>
+                </div>
+            </div>
+        `;
+    });
+}
+
+// Inicia com o filtro padrão ao carregar a página
+document.addEventListener('DOMContentLoaded', () => {
+    atualizarFiltroProdutos();
+});

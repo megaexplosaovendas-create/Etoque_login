@@ -1,17 +1,49 @@
- :root {
-     --primary: #0f766e;
-     --bg: #f0fdfa;
-     --text: #134e4a;
-     --warning: #f59e0b;
- }
+:root {
+    /* Cores atualizadas para combinar com o novo sistema */
+    --primary: #294788;       /* Seu Azul Corporativo */
+    --bg: #ECF0F1;            /* O Cinza Clouds que definimos */
+    --text: #1e293b;
+    --card-bg: #ffffff;
+    --border-color: #e2e8f0;
+}
 
- body {
-     font-family: 'Segoe UI', sans-serif;
-     background: var(--bg);
-     color: var(--text);
-     padding: 20px;
- }
+/* Resetando o body para não conflitar com a estrutura da sidebar */
+body {
+    font-family: 'Segoe UI', sans-serif;
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    /* ADICIONE ESTAS DUAS LINHAS: */
+    min-height: 100vh;
+    overflow-y: auto !important; 
+}
 
+/* 🗑️ REMOVA .tab-nav, .tab-link, .dropdown pois agora usamos a Sidebar */
+
+/* Ajuste dos Cards de KPI para o novo estilo */
+.kpi-card {
+    background: var(--card-bg);
+    padding: 25px 20px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); /* Sombra mais visível no fundo cinza */
+    transition: transform 0.2s ease;
+}
+
+.kpi-card:hover {
+    transform: translateY(-5px); /* Efeito suave ao passar o mouse */
+}
+
+/* Ajuste dos Gráficos */
+.chart-card {
+    background: var(--card-bg);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
  /* Navbar original mantida */
  .tab-nav {
      display: flex;
@@ -225,14 +257,6 @@
      border-bottom: 1px solid #f0fdfa;
  }
 
- header {
-     display: flex;
-     justify-content: space-between;
-     align-items: center;
-     background: white;
-     padding: 15px;
-     border-radius: 12px;
- }
 
  /* Estilo do Dropdown no Menu */
  .dropdown {
@@ -273,15 +297,15 @@
  }
 
  /* Controle de visibilidade das seções */
- .analytics-section {
-     display: none;
-     /* Escondido por padrão */
- }
+/* Esconde todas as seções por padrão */
+.analytics-section {
+    display: none;
+}
 
- .analytics-section.active {
-     display: block;
-     /* Mostra apenas a ativa */
- }
+/* Mostra apenas a que tiver a classe 'active' */
+.analytics-section.active {
+    display: block !important;
+}
 
  /* Badge de Inatividade */
  .badge-inactive {
@@ -357,6 +381,94 @@
      cursor: pointer;
  }
 
+ /* BARRA BRANCA PRINCIPAL */
+.main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #ffffff;
+    padding: 12px 25px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+    width: 100%;
+}
+
+/* GRUPO DO PERFIL (Estilo Mac Gibson) */
+.user-profile-card {
+    display: flex;
+    align-items: center;
+    gap: 12px; /* Espaço entre a foto e o texto */
+}
+
+/* O CÍRCULO DA FOTO */
+.avatar-circle {
+    width: 45px;
+    height: 45px;
+    background: #e2e8f0; /* Cor de fundo caso não tenha foto */
+    border-radius: 50%;
+    overflow: hidden;
+}
+
+.avatar-circle img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* NOME E CARGO EMPILHADOS */
+.user-data {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.user-name {
+    font-weight: 800;
+    font-size: 0.95rem;
+    color: #19253f; /* Seu azul escuro */
+    line-height: 1.2;
+}
+
+.user-role {
+    font-size: 0.8rem;
+    color: #94a3b8; /* Azul acinzentado claro */
+    font-weight: 500;
+}
+
+/* AJUSTE DO BOTÃO E SAUDAÇÃO */
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.greeting {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #19253f;
+}
+
+
+
+
+.sidebar-menu-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #19253f;
+    display: flex;
+}
+
+@media (max-width: 768px) {
+    .user-data {
+        display: none; /* Esconde o nome no celular, deixa só o círculo */
+    }
+    
+    .greeting {
+        font-size: 1.1rem;
+    }
+}
 
  @keyframes fadeIn {
      from {
