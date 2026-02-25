@@ -499,6 +499,19 @@ body:not(:has(.sidebar.collapsed)) .analytics-section {
     display: flex;
 }
 
+ /*==================================================================================================================================================================================================================
+                                                                            DASHBOARD EXECUTIVO - CSS DE PRODUTOS
+  ==================================================================================================================================================================================================================
+*/
+.modern-chart-card {
+    background: var(--card-bg); /* Usa o branco do seu :root */
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+
 @media (max-width: 768px) {
     .user-data {
         display: none;
@@ -519,3 +532,6 @@ body:not(:has(.sidebar.collapsed)) .analytics-section {
         opacity: 1;
     }
 }
+
+
+

@@ -18,9 +18,9 @@ function carregarDadosAnalytics() {
             // Ajuste os nomes das variáveis para o que o seu analytics.js espera
             window.localInventory = parsed.produtos || [];
             window.localHistory = parsed.historico || {};
-            
+
             console.log("✅ Dados carregados para Analytics");
-            
+
             // Força a atualização da tela
             if (typeof refreshActiveSection === "function") {
                 refreshActiveSection();
@@ -1216,11 +1216,11 @@ function filtrarCanal(canal) {
 
 
 
-// ==========================================
-// DASHBOARD EXECUTIVO - LÓGICA DE PRODUTOS
-// ==========================================
+// ==================================================================================================================================================================================================================
+//                                                                             DASHBOARD EXECUTIVO - LÓGICA DE PRODUTOS
+// ==================================================================================================================================================================================================================
 
-// 1. Títulos dinâmicos
+// 1. Títulos dinâmicos em Português
 const titulosFiltroPT = {
     'volume': 'Produtos Mais Vendidos (Top 5)',
     'faturamento': 'Maior Faturamento Bruto',
@@ -1229,57 +1229,149 @@ const titulosFiltroPT = {
     'encalhados': 'Estoque Parado (Sem Saída)'
 };
 
-// 2. Simulador do Banco de Dados (Depois vamos trocar isso pelo fetch no Node.js)
-const dadosSimulados = {
-    'volume': [
-        { nome: "Fone Bluetooth Pro X", preco: "149,90", stat: "1.250 bipes", progresso: 85, corBarra: "#3b82f6", fundoImg: "#fef08a", img: "https://via.placeholder.com/150/fef08a/000000?text=Fone" },
-        { nome: "Smartwatch Active 3", preco: "299,00", stat: "980 bipes", progresso: 65, corBarra: "#3b82f6", fundoImg: "#e0f2fe", img: "https://via.placeholder.com/150/e0f2fe/000000?text=Relogio" },
-        { nome: "Carregador Turbo 20W", preco: "45,50", stat: "850 bipes", progresso: 50, corBarra: "#3b82f6", fundoImg: "#f1f5f9", img: "https://via.placeholder.com/150/f1f5f9/000000?text=Carregador" }
-    ],
-    'faturamento': [
-        { nome: "Notebook Gamer RTX", preco: "5.499,00", stat: "R$ 65K gerados", progresso: 95, corBarra: "#10b981", fundoImg: "#dcfce7", img: "https://via.placeholder.com/150/dcfce7/000000?text=Notebook" },
-        { nome: "Monitor Ultrawide", preco: "1.299,00", stat: "R$ 38K gerados", progresso: 70, corBarra: "#10b981", fundoImg: "#f3e8ff", img: "https://via.placeholder.com/150/f3e8ff/000000?text=Monitor" },
-        { nome: "Cadeira Ergonomica", preco: "850,00", stat: "R$ 25K gerados", progresso: 40, corBarra: "#10b981", fundoImg: "#ffedd5", img: "https://via.placeholder.com/150/ffedd5/000000?text=Cadeira" }
-    ],
-    'ruptura': [
-        { nome: "Mouse sem fio Ultra", preco: "89,90", stat: "Restam 2 unid.", progresso: 10, corBarra: "#ef4444", fundoImg: "#fee2e2", img: "https://via.placeholder.com/150/fee2e2/000000?text=Mouse" },
-        { nome: "Teclado Mecânico RGB", preco: "249,00", stat: "Restam 5 unid.", progresso: 15, corBarra: "#ef4444", fundoImg: "#fef3c7", img: "https://via.placeholder.com/150/fef3c7/000000?text=Teclado" }
-    ],
-    'encalhados': [
-        { nome: "Capa Tablet Antiga", preco: "15,00", stat: "30 dias sem venda", progresso: 0, corBarra: "#94a3b8", fundoImg: "#f1f5f9", img: "https://via.placeholder.com/150/f1f5f9/000000?text=Capa" },
-        { nome: "Cabo VGA 1m", preco: "10,00", stat: "45 dias sem venda", progresso: 0, corBarra: "#94a3b8", fundoImg: "#f8fafc", img: "https://via.placeholder.com/150/f8fafc/000000?text=Cabo" }
-    ],
-    'lucro': [
-        { nome: "Película de Vidro", preco: "25,00", stat: "85% de margem", progresso: 90, corBarra: "#8b5cf6", fundoImg: "#e0e7ff", img: "https://via.placeholder.com/150/e0e7ff/000000?text=Pelicula" },
-        { nome: "Pop Socket", preco: "12,00", stat: "80% de margem", progresso: 75, corBarra: "#8b5cf6", fundoImg: "#fae8ff", img: "https://via.placeholder.com/150/fae8ff/000000?text=Suporte" }
-    ]
-};
+// 2. Simulador de Dados (Adicionado 'estoque_atual' para a lógica do Donut)
+async function carregarTopProdutosReal() {
+    try {
+        const response = await fetch('/api/vendas-historico');
+        const vendas = await response.json();
+
+        const container = document.getElementById('topProductsContainer');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        // Pegamos apenas os 5 primeiros produtos
+        const top5Vendas = vendas.slice(0, 5);
+
+        top5Vendas.forEach(v => {
+            const produto = v.Product || {};
+            const nome = produto.nome_produto || "Produto sem nome";
+            const preco = produto.preco_venda || "0,00";
+            const imgNome = produto.imagem_url; // Ex: -D-F10VERMELHO.png
+
+            // AQUI ESTÁ O TRUQUE: 
+            // Se o banco só tem o nome do arquivo, precisamos dizer a PASTA.
+            // Ajuste '/img/produtos/' para a pasta onde suas fotos ficam.
+            const imgPath = imgNome ? `/img/produtos/${imgNome}` : 'https://via.placeholder.com/150';
+
+            container.innerHTML += `
+                <div class="product-card">
+                    <div class="product-img-box" style="background: #f1f5f9;">
+                        <img src="${imgPath}" alt="${nome}" onerror="this.src='https://via.placeholder.com/150'">
+                    </div>
+                    <div class="product-title">${nome}</div>
+                    <div class="product-stats">
+                        <span class="product-price">R$ ${preco}</span>
+                        <span>${v.quantidade} bipes</span>
+                    </div>
+                    <div class="product-progress-bg">
+                        <div class="product-progress-fill" style="width: ${Math.min((v.quantidade / 10) * 100, 100)}%;"></div>
+                    </div>
+                </div>
+            `;
+        });
+
+    } catch (error) {
+        console.error("❌ Erro ao carregar Top 5:", error);
+    }
+}
+
+
+async function renderizarDashboardTop5() {
+    console.log("🚀 Iniciando carregamento do Top 5...");
+
+    try {
+        const response = await fetch('/api/top-produtos');
+        const topProdutos = await response.json();
+
+        console.log("📦 Dados recebidos da KingHost/Banco:", topProdutos);
+
+        const container = document.getElementById('topProductsContainer');
+        if (!container) {
+            console.error("❌ ERRO: div 'topProductsContainer' não encontrada no HTML.");
+            return;
+        }
+
+        container.innerHTML = '';
+
+        const urlBaseKingHost = "https://megaaxnen.com.br/controle-de-estoque/uploads/produtos/";
+
+        topProdutos.forEach(v => {
+            const dadosProd = v.Product || {};
+            const sku = dadosProd.item_id || "";
+            const nome = dadosProd.nome_produto || sku || "Produto Desconhecido";
+            const preco = dadosProd.preco_venda || 0;
+
+            // O palpite inicial (tenta pegar do banco ou usa PNG)
+            let nomeArquivo = dadosProd.imagem_url;
+            if (!nomeArquivo || nomeArquivo.trim() === "") {
+                nomeArquivo = `${sku}.png`;
+            } else if (!nomeArquivo.includes('.')) {
+                nomeArquivo += '.png';
+            }
+
+            const imgPath = `https://megaaxnen.com.br/controle-de-estoque/uploads/produtos/${nomeArquivo}`;
+
+            // ... dentro do seu loop topProdutos.forEach ...
+
+            container.innerHTML += `
+    <div class="product-card" style="min-width: 180px; padding: 15px; border: 1px solid #eee; border-radius: 8px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <div class="product-img-box" style="height: 120px; text-align: center; display: flex; align-items: center; justify-content: center; background: #f9fafb; border-radius: 6px;">
+            <img src="${imgPath}" alt="${nome}" style="max-height: 100%; max-width: 100%; object-fit: contain;" onerror="buscarImagemAlternativa(this, '${sku}')">
+        </div>
+        <div class="product-title" style="margin-top: 12px; font-weight: bold; font-size: 0.9rem; color: #333; height: 2.4em; overflow: hidden;">${nome}</div>
+        <div class="product-stats" style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+            <span style="color: #10b981; font-weight: 700; font-size: 0.95rem;">${formatarMoeda(preco)}</span>
+            <span style="color: #6b7280; font-size: 0.8rem; font-weight: 500;">${v.total_bipes || 0} vendidos</span>
+        </div>
+        <div class="product-progress-bg" style="height: 4px; background: #f3f4f6; border-radius: 2px; margin-top: 12px;">
+            <div class="product-progress-fill" style="width: 70%; height: 100%; background: #3b82f6; border-radius: 2px;"></div>
+        </div>
+    </div>
+`;
+        });
+
+        console.log("✅ Top 5 renderizado com sucesso!");
+
+    } catch (erro) {
+        console.error("❌ Erro ao buscar/renderizar os produtos:", erro);
+    }
+}
+
+
+
+// Função auxiliar para o preço ficar profissional
+function formatarMoeda(valor) {
+    return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+    }).format(valor);
+}
+
+// 🚩 O SEGREDO ESTÁ AQUI: Isso faz a função rodar assim que o HTML abre
+document.addEventListener('DOMContentLoaded', renderizarDashboardTop5);
+
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Sincroniza os dados do LocalStorage (já que não usamos mais Firebase)
-    if (typeof sincronizarDados === "function") sincronizarDados();
+    console.log("🚀 Mega Explosão Vendas - Dashboard Iniciado");
 
-    // 2. Define qual aba deve abrir primeiro
-    // Se a URL tiver #performance, abre ela. Se não tiver nada, abre 'executivo'
-    const secaoParaAbrir = window.location.hash.replace('#', '') || 'executivo';
+    // Inicia a visualização padrão
+    atualizarFiltroProdutos();
 
-    // 3. Roda a função de trocar de tela
-    showSection(secaoParaAbrir);
-
-    // 4. Roda o seu filtro de produtos (o que você mandou)
-    if (typeof atualizarFiltroProdutos === "function") {
-        atualizarFiltroProdutos();
-    }
-    
-    console.log("🚀 Sistema V20 iniciado na seção:", secaoParaAbrir);
+    // Carrega o gráfico de estoque com base em todos os produtos simulados
+    // Criamos um array plano com todos os produtos para o gráfico de status global
+    const todosProdutos = Object.values(dadosSimulados).flat();
+    renderizarGraficoEstoque(todosProdutos);
 });
+
+
 
 // 3. A Função Mágica que troca tudo
 function atualizarFiltroProdutos() {
     const valorSelecionado = document.getElementById('filtroProdutosExecutivo').value;
     const tituloElement = document.getElementById('tituloFiltroProduto');
     const containerProdutos = document.getElementById('topProductsContainer');
-    
+
     // Animação do Título
     tituloElement.style.opacity = 0;
     setTimeout(() => {
@@ -1290,10 +1382,10 @@ function atualizarFiltroProdutos() {
 
     // Esvazia o carrossel atual com um efeitinho de fade out
     containerProdutos.style.opacity = 0;
-    
+
     setTimeout(() => {
         containerProdutos.innerHTML = ''; // Limpa os cards antigos
-        
+
         // Pega a lista certa do nosso "banco de dados falso"
         const produtosAtuais = dadosSimulados[valorSelecionado];
 
@@ -1357,58 +1449,183 @@ const titulosFiltro = {
 
 // Função chamada quando o usuário muda o filtro
 function atualizarFiltroProdutos() {
-    const valorSelecionado = document.getElementById('selectFiltroDash').value;
-    const tituloElement = document.getElementById('tituloFiltro');
+    // 1. Primeiro guardamos o elemento (substitua 'id-do-seu-filtro' pelo ID real que está no seu HTML)
+    const selectFiltro = document.getElementById('id-do-seu-filtro');
 
-    // 1. Muda o título da esquerda com animação suave
-    tituloElement.style.opacity = 0;
-    setTimeout(() => {
-        tituloElement.innerText = titulosFiltro[valorSelecionado];
-        tituloElement.style.opacity = 1;
-        tituloElement.style.transition = "opacity 0.3s ease";
-    }, 150);
+    // 2. A PROTEÇÃO: Se o elemento não existir na tela, a função para silenciosamente sem quebrar o sistema
+    if (!selectFiltro) {
+        console.warn("Aviso: Filtro não encontrado na tela, ignorando atualização.");
+        return;
+    }
 
-    // 2. Chama a função para ir no MySQL buscar os dados correspondentes
-    // Como ainda vamos criar a rota do Node, vou chamar uma função simulada
-    renderizarCardsMocados(valorSelecionado);
+    // 3. Se ele existir, aí sim lemos o valor com segurança
+    const valor = selectFiltro.value;
+
+    // ... resto do seu código ...
 }
 
 // Função que desenha os cards na tela
-function renderizarCardsMocados(filtro) {
+function renderizarCardsMocados(listaProdutos) {
+    // 1. O SEGREDO: Procuramos o container
     const container = document.getElementById('containerCarrosselProdutos');
 
-    // Simulando dados que viriam do seu MySQL
-    const produtosMock = [
-        { nome: "Rompi Berkancing", preco: 400.98, vendas: "1.2k", progresso: 80, corFundo: "#ffd54f", img: "https://freepngimg.com/thumb/headphones/2-2-headphones-png-file.png" },
-        { nome: "Blazzer assorted poc...", preco: 550.75, vendas: "900", progresso: 60, corFundo: "#f1f5f9", img: "https://freepngimg.com/thumb/sunglasses/25509-5-sunglasses-transparent.png" },
-        { nome: "Pattern top with knot", preco: 210.98, vendas: "719", progresso: 45, corFundo: "#f1f5f9", img: "https://freepngimg.com/thumb/camera/2-2-camera-transparent.png" },
-        { nome: "Basic Hoodie - blue", preco: 149.99, vendas: "512", progresso: 30, corFundo: "#f1f5f9", img: "https://freepngimg.com/thumb/lipstick/2-2-lipstick-png-hd.png" }
-    ];
+    // 2. A TRAVA DE SEGURANÇA: Se o container não existir (como na página de Analytics),
+    // a função para aqui e NÃO quebra o resto do código.
+    if (!container) {
+        console.warn("⚠️ Container de cards não encontrado nesta página. Pulando para o gráfico...");
+        return;
+    }
 
-    // Limpa o container
+    // 3. Limpa o container
     container.innerHTML = '';
 
-    // Cria o HTML para cada produto
-    produtosMock.forEach(prod => {
+    // 4. Usa os dados REAIS que vieram do Sequelize (limitando aos 10 primeiros para não travar a tela)
+    const topProdutos = listaProdutos.slice(0, 10);
+
+    topProdutos.forEach(prod => {
+        // Ajustamos os nomes das propriedades para bater com o seu MySQL
+        const nome = prod.nome || "Produto sem nome";
+        const preco = prod.preco ? Number(prod.preco).toFixed(2) : "0.00";
+        const estoque = prod.estoque_atual || 0;
+
+        // Cor da barra baseada no estoque (usando a sua lógica de cores)
+        const corBarra = estoque <= 0 ? '#ef4444' : (estoque <= 5 ? '#f1c40f' : '#2ecc71');
+
         container.innerHTML += `
             <div class="card-prod">
-                <div class="img-box" style="background-color: ${prod.corFundo};">
-                    <img src="${prod.img}" alt="${prod.nome}">
+                <div class="img-box" style="background-color: #f1f5f9;">
+                    <img src="${prod.img || 'https://via.placeholder.com/150'}" alt="${nome}">
                 </div>
-                <div class="prod-nome" title="${prod.nome}">${prod.nome}</div>
+                <div class="prod-nome" title="${nome}">${nome}</div>
                 <div class="prod-info">
-                    <span class="prod-preco">$${prod.preco.toFixed(2)}</span>
-                    <span class="prod-vendas">${prod.vendas} sales</span>
+                    <span class="prod-preco">R$ ${preco}</span>
+                    <span class="prod-vendas">Estoque: ${estoque}</span>
                 </div>
                 <div class="barra-bg">
-                    <div class="barra-fill" style="width: ${prod.progresso}%;"></div>
+                    <div class="barra-fill" style="width: ${Math.min(estoque, 100)}%; background-color: ${corBarra};"></div>
                 </div>
             </div>
         `;
     });
+
+    console.log("🎴 Cards reais renderizados com sucesso!");
 }
 
-// Inicia com o filtro padrão ao carregar a página
+
+function processarEstoqueReal(dadosDoMySQL) {
+    const counts = { critico: 0, alerta: 0, bom: 0 };
+
+    dadosDoMySQL.forEach(item => {
+        // Converte para número e trata valores nulos
+        const estoque = Number(item.estoque_atual || 0);
+
+        if (estoque <= 0) {
+            counts.critico++; // Inclui os negativos -246, -85, etc.
+        } else if (estoque <= 5) {
+            counts.alerta++; // Itens entre 1 e 5
+        } else {
+            counts.bom++;    // Itens acima de 5
+        }
+    });
+
+    // Envia os números calculados para o gráfico
+    atualizarGraficoDonut(counts.critico, counts.alerta, counts.bom);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-    atualizarFiltroProdutos();
+    // 1. Resolve o erro fatal do trendChart imediatamente
+    // Isso "destrava" o arquivo para que o resto do código funcione
+    const canvasTrend = document.getElementById('trendChart');
+    if (canvasTrend) {
+        // Usamos window. para evitar o erro de re-declaração
+        if (window.trendChart instanceof Chart) window.trendChart.destroy();
+    }
+
+    // 2. Chama a função que busca os dados REAIS do MySQL
+    carregarDadosDoBanco();
 });
+
+async function carregarDadosDoBanco() {
+    try {
+        console.log("🔍 Buscando dados da tabela produtos...");
+
+        // Substitua '/api/produtos' pela URL real da sua rota Node.js ou PHP
+        const response = await fetch('/api/produtos');
+
+        if (!response.ok) {
+            if (response.status === 403) console.error("❌ Acesso negado. Entre como Admin.");
+            throw new Error(`Erro HTTP: ${response.status}`);
+        }
+
+        const produtosReais = await response.json();
+        console.log("✅ Dados recebidos:", produtosReais);
+
+        // 3. Alimenta o gráfico de pizza com os dados do banco
+        renderizarGraficoEstoque(produtosReais);
+
+        // 4. Se você tiver a função de cards, alimenta ela também
+        if (typeof renderizarCardsMocados === "function") {
+            renderizarCardsMocados(produtosReais);
+        }
+
+    } catch (error) {
+        console.error("❌ Falha ao carregar dashboard:", error);
+        // Se falhar, você pode chamar os dados simulados como backup
+        renderizarGraficoEstoque(Object.values(dadosSimulados).flat());
+    }
+}
+
+function renderizarGraficoEstoque(listaProdutos) {
+    const counts = { critico: 0, alerta: 0, bom: 0 };
+
+    listaProdutos.forEach(p => {
+        // Garante que o nome da coluna aqui seja igual ao do seu MySQL (estoque_atual)
+        const estoque = Number(p.estoque_atual || 0);
+        if (estoque <= 0) counts.critico++;
+        else if (estoque <= 5) counts.alerta++;
+        else counts.bom++;
+    });
+
+    const ctx = document.getElementById('stockDonutChart');
+    if (!ctx) return;
+
+    if (window.stockChartInstance) window.stockChartInstance.destroy();
+
+    window.stockChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Crítico (≤ 0)', 'Alerta (1-5)', 'Bom (> 5)'],
+            datasets: [{
+                data: [counts.critico, counts.alerta, counts.bom],
+                backgroundColor: ['#e74c3c', '#f1c40f', '#2ecc71'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%'
+        }
+    });
+}
+
+// 🔄 RASTREADOR DE IMAGENS: Tenta PNG, depois JPG, depois JPG maiúsculo
+window.buscarImagemAlternativa = function (imgElement, sku) {
+    const urlBase = "https://megaaxnen.com.br/controle-de-estoque/uploads/produtos/";
+
+    if (!imgElement.dataset.tentativa) {
+        // Tentativa 1: O .png falhou, vamos tentar .jpg
+        imgElement.dataset.tentativa = "1";
+        imgElement.src = `${urlBase}${sku}.jpg`;
+
+    } else if (imgElement.dataset.tentativa === "1") {
+        // Tentativa 2: O .jpg minúsculo falhou, vamos tentar .JPG maiúsculo
+        imgElement.dataset.tentativa = "2";
+        imgElement.src = `${urlBase}${sku}.JPG`;
+
+    } else {
+        // Falhou tudo: Protege o layout com a caixa cinza
+        imgElement.onerror = null; // Impede loop infinito
+        imgElement.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='50' height='50' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z'></path><polyline points='3.27 6.96 12 12.01 20.73 6.96'></polyline><line x1='12' y1='22.08' x2='12' y2='12'></line></svg>";
+    }
+};

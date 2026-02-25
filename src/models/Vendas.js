@@ -31,12 +31,8 @@ const Venda = sequelize.define('Venda', {
     hora_venda: {
         type: DataTypes.TIME,
         allowNull: true
-    },
-    // 👇 ADICIONEI ESTA PARTE PARA CORRIGIR O ERRO 👇
-    imagem_url: {
-        type: DataTypes.STRING, // Aceita o link da imagem
-        allowNull: true         // Deixa vazio se não tiver foto
     }
+
 }, {
     tableName: 'vendas',
     freezeTableName: true,

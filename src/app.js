@@ -44,6 +44,21 @@ const mySessionStore = new SequelizeStore({
     db: sequelize,
 });
 
+// Isso cria a ponte usando o item_id que você tem em ambas as tabelas
+
+Venda.belongsTo(Product, {
+    foreignKey: 'item_id',
+    targetKey: 'item_id',
+    constraints: false  // <--- ISSO RESOLVE O ERRO 150
+});
+
+Product.hasMany(Venda, {
+    foreignKey: 'item_id',
+    sourceKey: 'item_id',
+    constraints: false
+});
+
+console.log("✅ Associações configuradas (Modo Flexível).");
 app.use(session({
     secret: 'segredo_super_secreto_wms', // Pode mudar isso se quiser
     store: mySessionStore,
@@ -68,6 +83,9 @@ app.get('/favicon.ico', (req, res) => res.status(204).end());
 
 // Faz o Express entender que os arquivos do site estão na pasta 'front'
 app.use(express.static(path.join(__dirname, '../front')));
+
+
+app.use('/img/produtos', express.static(path.join(__dirname, '../front/img/produtos')));
 
 // Rota raiz: Se o usuário digitar só o endereço, manda pro Login
 app.get('/', (req, res) => {
@@ -549,17 +567,52 @@ app.get('/api/vendas', async (req, res) => {
 });
 
 // --- ROTA DE ATALHO (GET /api/vendas-historico) ---
-// Criamos essa rota apenas para garantir que a sua função antiga não dê erro 404
 app.get('/api/vendas-historico', async (req, res) => {
     try {
         const historico = await Venda.findAll({
-            order: [['data_venda', 'DESC']]
+            include: [{
+                model: Product,
+                attributes: ['imagem_url'] // Puxa a foto REAL da tabela produtos
+            }]
         });
         res.json(historico);
+    } catch (e) { res.status(500).send(e.message); }
+});
+
+// --- NOVA ROTA: TOP 5 PRODUTOS MAIS VENDIDOS ---
+app.get('/api/top-produtos', async (req, res) => {
+    try {
+        const topProdutos = await Venda.findAll({
+            attributes: [
+                'item_id',
+                [Venda.sequelize.fn('SUM', Venda.sequelize.col('quantidade')), 'total_bipes'] 
+            ],
+            // 🚩 Agrupando apenas pelas colunas que existem no seu model
+            group: [
+                'item_id',
+                'Product.item_id', 
+                'Product.nome_produto',
+                'Product.imagem_url',
+                'Product.preco_venda'
+            ],
+            order: [[Venda.sequelize.fn('SUM', Venda.sequelize.col('quantidade')), 'DESC']],
+            limit: 5,
+            include: [{
+                model: Product,
+                // 🚩 Puxando apenas os atributos reais
+                attributes: ['item_id', 'nome_produto', 'imagem_url', 'preco_venda'], 
+                required: true 
+            }]
+        });
+        
+        res.json(topProdutos);
+        
     } catch (error) {
-        res.status(500).json({ error: "Erro no servidor" });
+        console.error("❌ ERRO FATAL NO TOP 5:", error.message);
+        res.status(500).send("Erro interno: " + error.message);
     }
 });
+
 
 app.post('/api/vendas', async (req, res) => {
     try {
@@ -725,8 +778,6 @@ app.put('/api/edit/:item_id', async (req, res) => {
         res.status(500).json({ success: false, error: error.message });
     }
 });
-
-// ROTA DELETE (Substitua a sua atual)
 // ROTA DE DELETE (No app.js)
 app.delete('/api/delete/:item_id', async (req, res) => {
     try {
@@ -866,6 +917,27 @@ app.get('/api/logistica/contagem-hoje', async (req, res) => {
     }
 });
 
+/************************************************
+ * ROTAS PARA O DASHBOARD
+ ************************************************/
+
+app.get('/api/produtos', async (req, res) => {
+    try {
+        // 1. Usamos o modelo 'Product' que você já importou lá em cima
+        // Buscamos apenas a coluna 'estoque_atual'
+        const produtos = await Product.findAll({
+            attributes: ['estoque_atual'],
+            raw: true // Retorna dados puros, mais leve para o gráfico
+        });
+
+        console.log(`✅ ${produtos.length} produtos enviados para o Dashboard.`);
+        res.json(produtos);
+
+    } catch (error) {
+        console.error("❌ Erro ao buscar produtos no Sequelize:", error);
+        res.status(500).json({ error: "Erro ao carregar dados do banco" });
+    }
+});
 
 // 2. ROTAS DE API
 app.use('/products', ProductRoutes);
