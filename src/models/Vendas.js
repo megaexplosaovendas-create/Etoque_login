@@ -8,7 +8,7 @@ const Venda = sequelize.define('Venda', {
         autoIncrement: true
     },
     item_id: {
-        type: DataTypes.STRING, // Nota: Se você salvar o SKU aqui, STRING é o ideal.
+        type: DataTypes.STRING,
         allowNull: false
     },
     plataforma: {
@@ -24,6 +24,14 @@ const Venda = sequelize.define('Venda', {
         type: DataTypes.INTEGER,
         allowNull: false
     },
+    preco_venda: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true
+    },
+    preco_custo: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true
+    },
     data_venda: {
         type: DataTypes.DATEONLY,
         allowNull: false
@@ -32,7 +40,6 @@ const Venda = sequelize.define('Venda', {
         type: DataTypes.TIME,
         allowNull: true
     }
-
 }, {
     tableName: 'vendas',
     freezeTableName: true,

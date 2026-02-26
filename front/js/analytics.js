@@ -743,8 +743,28 @@ async function renderizarTop10() {
         }
 
         // 3. SALVA NA MEMÓRIA GLOBAL (para outras funções)
+        // 3. PROCESSAMENTO DE DADOS (Sem travar o dashboard)
         window.vendasHistorico = dados;
-        localStorage.setItem('vendasHistorico', JSON.stringify(dados));
+
+        // 🚀 PASSO A: Primeiro, calcula o faturamento (é mais rápido)
+        if (typeof atualizarKpiFaturamento === 'function') {
+            try {
+                console.log("💰 Calculando faturamento global...");
+                atualizarKpiFaturamento(dados);
+            } catch (err) {
+                console.error("❌ Erro dentro da função de faturamento:", err);
+            }
+        }
+
+        // 💾 PASSO B: Depois, tenta salvar no HD do navegador
+        setTimeout(() => {
+            try {
+                localStorage.setItem('vendasHistorico', JSON.stringify(dados));
+                console.log("✅ Backup local salvo.");
+            } catch (e) {
+                console.warn("⚠️ LocalStorage ignorado (limite de memória).");
+            }
+        }, 500); // Dá meio segundo de folga
 
         const somaVendas = {};
         const agora = new Date();
@@ -1284,6 +1304,8 @@ async function renderizarDashboardTop5() {
         const response = await fetch('/api/top-produtos');
         const topProdutos = await response.json();
 
+        atualizarKpiFaturamento(topProdutos);
+
         console.log("📦 Dados recebidos da KingHost/Banco:", topProdutos);
 
         const container = document.getElementById('topProductsContainer');
@@ -1629,3 +1651,117 @@ window.buscarImagemAlternativa = function (imgElement, sku) {
         imgElement.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='50' height='50' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z'></path><polyline points='3.27 6.96 12 12.01 20.73 6.96'></polyline><line x1='12' y1='22.08' x2='12' y2='12'></line></svg>";
     }
 };
+
+
+
+// ======================================================
+// Faturamento
+// ======================================================
+function atualizarKpiFaturamento(listaProdutos) {
+    const elementoValor = document.getElementById('dashTotalSales');
+    const elementoTrend = document.querySelector('.modern-kpi-trend');
+    if (!elementoValor) return;
+
+    const agora = new Date();
+    const mesAtual = agora.getMonth(); // 1 para Fevereiro
+    const anoAtual = agora.getFullYear();
+
+    // Calcula o mês anterior corretamente (inclusive se for Janeiro/Dezembro)
+    const mesPassado = mesAtual === 0 ? 11 : mesAtual - 1;
+    const anoPassado = mesAtual === 0 ? anoAtual - 1 : anoAtual;
+
+    let faturamentoAtual = 0;
+    let faturamentoPassado = 0;
+
+    listaProdutos.forEach(v => {
+        if (!v.data_venda) return;
+
+        // Converte "2026-02-25" em dados comparáveis
+        const partes = v.data_venda.split('-');
+        const anoVenda = parseInt(partes[0]);
+        const mesVenda = parseInt(partes[1]) - 1; // Ajusta para 0-11
+
+        const preco = parseFloat(v.preco_venda || 0);
+        const qtd = Number(v.quantidade || 0);
+        const totalVenda = preco * qtd;
+
+        if (mesVenda === mesAtual && anoVenda === anoAtual) {
+            faturamentoAtual += totalVenda;
+        } else if (mesVenda === mesPassado && anoVenda === anoPassado) {
+            faturamentoPassado += totalVenda;
+        }
+    });
+
+    // 1. Exibe o faturamento de Fevereiro
+    elementoValor.textContent = formatarMoeda(faturamentoAtual);
+
+    // 2. Calcula e exibe a porcentagem
+    if (elementoTrend) {
+        if (faturamentoPassado > 0) {
+            const porcentagem = ((faturamentoAtual - faturamentoPassado) / faturamentoPassado) * 100;
+            const classe = porcentagem >= 0 ? 'trend-up' : 'trend-down';
+            const sinal = porcentagem >= 0 ? '+' : '';
+            elementoTrend.innerHTML = `<span class="${classe}">${sinal}${porcentagem.toFixed(1)}%</span> vs mês passado`;
+        } else {
+            // Se Janeiro for 0, a porcentagem fica 0%
+            elementoTrend.innerHTML = `<span style="color:#94a3b8;">0.0%</span> vs mês passado`;
+        }
+    }
+    
+    console.log(`📊 Fevereiro: R$ ${faturamentoAtual.toFixed(2)} | Janeiro: R$ ${faturamentoPassado.toFixed(2)}`);
+}
+
+
+
+// ======================================================
+//Ticket Médio
+// ======================================================
+function atualizarKpiTicketMedio(listaProdutos) {
+    const elementoValor = document.getElementById('dashNetSales');
+    // Busca a tendência dentro do mesmo card
+    const card = elementoValor.closest('.modern-kpi-card');
+    const elementoTrend = card ? card.querySelector('.modern-kpi-trend') : null;
+
+    if (!elementoValor) return;
+
+    const agora = new Date();
+    const mesAtual = agora.getMonth(); 
+    const anoAtual = agora.getFullYear();
+    const mesPassado = mesAtual === 0 ? 11 : mesAtual - 1;
+    const anoPassado = mesAtual === 0 ? anoAtual - 1 : anoAtual;
+
+    let faturamentoAtual = 0, faturamentoAnterior = 0;
+    let pedidosAtual = 0, pedidosAnterior = 0;
+
+    listaProdutos.forEach(v => {
+        if (!v.data_venda) return;
+        
+        const partes = v.data_venda.split('-');
+        const anoVenda = parseInt(partes[0]);
+        const mesVenda = parseInt(partes[1]) - 1;
+
+        const preco = parseFloat(v.preco_venda || 0);
+        const qtd = Number(v.quantidade || 0);
+
+        if (mesVenda === mesAtual && anoVenda === anoAtual) {
+            faturamentoAtual += (preco * qtd);
+            pedidosAtual++; 
+        } else if (mesVenda === mesPassado && anoVenda === anoPassado) {
+            faturamentoAnterior += (preco * qtd);
+            pedidosAnterior++;
+        }
+    });
+
+    const ticketAtual = pedidosAtual > 0 ? faturamentoAtual / pedidosAtual : 0;
+    const ticketAnterior = pedidosAnterior > 0 ? faturamentoAnterior / pedidosAnterior : 0;
+
+    // 💰 Formatação para Real (BRL)
+    elementoValor.textContent = ticketAtual.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    if (elementoTrend && ticketAnterior > 0) {
+        const porcentagem = ((ticketAtual - ticketAnterior) / ticketAnterior) * 100;
+        const classe = porcentagem >= 0 ? 'trend-up' : 'trend-down';
+        const sinal = porcentagem >= 0 ? '+' : '';
+        elementoTrend.innerHTML = `<span class="${classe}">${sinal}${porcentagem.toFixed(1)}%</span> vs mês passado`;
+    }
+}
