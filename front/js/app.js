@@ -28,7 +28,10 @@
         }
 
         // 2. FILTRO DA LISTA (VERDE/VERMELHO)
-        const termosPermitidos = ['[Lido no PDF]', 'Não encontrado', '❌', '⚠️'];
+
+        // 2. FILTRO DA LISTA (ADICIONE 'MATCH!')
+        const termosPermitidos = ['[Lido no PDF]', 'Não encontrado', '❌', '⚠️', 'MATCH!'];
+        // 🚩 Adicionamos 'MATCH!' acima
         const ehInutil = message.includes('Dados carregados');
 
         if (termosPermitidos.some(term => message.includes(term)) && !ehInutil) {
@@ -55,7 +58,7 @@
 
             logDiv.insertBefore(linha, logDiv.firstChild);
 
-            if (logDiv.childNodes.length > 50) logDiv.removeChild(logDiv.lastChild);
+            if (logDiv.childNodes.length > 200) logDiv.removeChild(logDiv.lastChild);
         }
     };
 
@@ -1080,7 +1083,7 @@ async function reprocessarTodaLista() {
 
     for (let i = memoriaErrosGlobal.length - 1; i >= 0; i--) {
         const item = memoriaErrosGlobal[i];
-        
+
         // 🚩 O SEGREDO: Aqui o sistema tenta fazer o 'Bipe Retroativo'
         const processou = await identificarEBaixarEstoque(item.sku, item.qtd, "REPROCESSAMENTO_PDF", dataAtual);
 
@@ -1173,7 +1176,7 @@ async function fluxoResolucao(sku, qtd, tipo) {
             showToast(`✅ SKU ${sku} confirmado! Registrando venda...`, 'success');
 
             const dataLancamento = document.getElementById('dataLancamento')?.value || new Date().toISOString().split('T')[0];
-            
+
             // PASSO 2: EXECUTAR BAIXA E REGISTRO DE VENDA
             // Certifique-se que essa função 'identificarEBaixarEstoque' faz o INSERT na tabela VENDAS
             const sucessoTotal = await identificarEBaixarEstoque(sku, qtd, "VENDA_PDF_MANUAL", dataLancamento);
@@ -1182,9 +1185,9 @@ async function fluxoResolucao(sku, qtd, tipo) {
                 // PASSO 3: Limpeza de memória e atualização de Dash
                 memoriaErrosGlobal = memoriaErrosGlobal.filter(i => i.sku !== sku);
                 localStorage.setItem('erros_pendentes_v1', JSON.stringify(memoriaErrosGlobal));
-                
-                gerenciarPainelErros([]); 
-                
+
+                gerenciarPainelErros([]);
+
                 // Forçamos a sincronização para atualizar o faturamento de R$ 509k na tela
                 if (typeof sincronizarDados === 'function') await sincronizarDados(true);
                 showToast(`🚀 Venda registrada e faturamento atualizado!`);
