@@ -105,4 +105,46 @@ router.delete('/delete/:item_id', async (req, res) => {
     }
 });
 
+// Rota para buscar todos os produtos para o Dashboard
+router.get('/api/produtos', async (req, res) => {
+    try {
+        const { Produto } = require('./models'); // Ajuste o caminho do seu model
+        const produtos = await Produto.findAll({
+            attributes: ['item_id', 'preco_venda'] // Só o necessário para ser rápido
+        });
+        res.json(produtos);
+    } catch (error) {
+        console.error("Erro ao buscar produtos:", error);
+        res.status(500).json({ error: "Erro interno no servidor" });
+    }
+});
+
+// Rota para resolver pendências de SKU do PDF
+router.post('/api/produtos/resolver-pendencia', async (req, res) => {
+    try {
+        const { skuOriginal, tipo, skuVinculo } = req.body;
+        const { Produto } = require('./models');
+
+        if (tipo === 'novo') {
+            await Produto.create({
+                item_id: skuOriginal,
+                nome: `CADASTRO MANUAL - ${skuOriginal}`,
+                preco_venda: 0,
+                preco_custo: 0
+            });
+        } else if (tipo === 'variante') {
+            // Atualiza o produto principal para reconhecer o SKU do PDF como um "apelido"
+            await Produto.update(
+                { sku_referencia: skuOriginal }, 
+                { where: { item_id: skuVinculo } }
+            );
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
 module.exports = router;

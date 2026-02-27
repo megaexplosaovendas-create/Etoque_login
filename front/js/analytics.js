@@ -7,6 +7,18 @@ const META_DIARIA = 500;
 
 // --- INICIALIZAÇÃO E ESCUTAS ---
 
+async function carregarProdutosParaMemoria() {
+    try {
+        console.log("📦 Buscando inventário de produtos...");
+        const res = await fetch('/api/produtos');
+        if (!res.ok) return;
+        window.todosOsProdutos = await res.json();
+        console.log(`✅ ${window.todosOsProdutos.length} SKUs carregados.`);
+    } catch (err) {
+        console.error("❌ Erro ao carregar produtos:", err);
+    }
+}
+
 // DELETE todo o bloco que começa com db.ref('estoque_v20').on(...)
 // E COLOQUE ESTE:
 
@@ -743,8 +755,12 @@ async function renderizarTop10() {
         }
 
         // 3. SALVA NA MEMÓRIA GLOBAL (para outras funções)
-        // 3. PROCESSAMENTO DE DADOS (Sem travar o dashboard)
         window.vendasHistorico = dados;
+
+          // 🚩 INSERIR AQUI PARA NÃO ALTERAR A LÓGICA EXISTENTE:
+        if (!window.todosOsProdutos) {
+            await carregarProdutosParaMemoria();
+        } 
 
         // 🚀 PASSO A: Primeiro, calcula o faturamento (é mais rápido)
         if (typeof atualizarKpiFaturamento === 'function') {
@@ -753,6 +769,30 @@ async function renderizarTop10() {
                 atualizarKpiFaturamento(dados);
             } catch (err) {
                 console.error("❌ Erro dentro da função de faturamento:", err);
+            }
+        }
+
+        // Chame a função de SKUs logo após o faturamento
+        if (typeof atualizarKpiSkusAtivos === 'function') {
+            atualizarKpiSkusAtivos(dados);
+        }
+        
+        // (PASSO C):
+        if (typeof atualizarKpiTicketMedio === 'function') {
+            try {
+                console.log("🎫 Calculando ticket médio...");
+                atualizarKpiTicketMedio(dados);
+            } catch (err) {
+                console.error("❌ Erro dentro da função de ticket médio:", err);
+            }
+        }
+        // 🚩 ADICIONE O PASSO D AQUI:
+        if (typeof atualizarKpiSkusAtivos === 'function') {
+            try {
+                console.log("📦 Calculando SKUs ativos e rotatividade...");
+                atualizarKpiSkusAtivos(dados);
+            } catch (err) {
+                console.error("❌ Erro no KPI de SKUs Ativos:", err);
             }
         }
 
@@ -1707,7 +1747,7 @@ function atualizarKpiFaturamento(listaProdutos) {
             elementoTrend.innerHTML = `<span style="color:#94a3b8;">0.0%</span> vs mês passado`;
         }
     }
-    
+
     console.log(`📊 Fevereiro: R$ ${faturamentoAtual.toFixed(2)} | Janeiro: R$ ${faturamentoPassado.toFixed(2)}`);
 }
 
@@ -1725,7 +1765,7 @@ function atualizarKpiTicketMedio(listaProdutos) {
     if (!elementoValor) return;
 
     const agora = new Date();
-    const mesAtual = agora.getMonth(); 
+    const mesAtual = agora.getMonth();
     const anoAtual = agora.getFullYear();
     const mesPassado = mesAtual === 0 ? 11 : mesAtual - 1;
     const anoPassado = mesAtual === 0 ? anoAtual - 1 : anoAtual;
@@ -1735,7 +1775,7 @@ function atualizarKpiTicketMedio(listaProdutos) {
 
     listaProdutos.forEach(v => {
         if (!v.data_venda) return;
-        
+
         const partes = v.data_venda.split('-');
         const anoVenda = parseInt(partes[0]);
         const mesVenda = parseInt(partes[1]) - 1;
@@ -1745,7 +1785,7 @@ function atualizarKpiTicketMedio(listaProdutos) {
 
         if (mesVenda === mesAtual && anoVenda === anoAtual) {
             faturamentoAtual += (preco * qtd);
-            pedidosAtual++; 
+            pedidosAtual++;
         } else if (mesVenda === mesPassado && anoVenda === anoPassado) {
             faturamentoAnterior += (preco * qtd);
             pedidosAnterior++;
@@ -1764,4 +1804,48 @@ function atualizarKpiTicketMedio(listaProdutos) {
         const sinal = porcentagem >= 0 ? '+' : '';
         elementoTrend.innerHTML = `<span class="${classe}">${sinal}${porcentagem.toFixed(1)}%</span> vs mês passado`;
     }
+}
+
+
+
+// ======================================================
+//             atualizar Skus Ativos
+// ======================================================
+function atualizarKpiSkusAtivos(listaVendas) {
+    const elementoValor = document.getElementById('dashTotalVariant');
+    const card = elementoValor ? elementoValor.closest('.modern-kpi-card') : null;
+    const elementoTrend = card ? card.querySelector('.modern-kpi-trend') : null;
+
+    if (!elementoValor || !window.todosOsProdutos) return;
+
+    // 1. Total de SKUs únicos cadastrados
+    const totalSkus = window.todosOsProdutos.length;
+
+    // 2. Identificar SKUs que venderam nos últimos 30 dias
+    const trintaDiasAtras = new Date();
+    trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
+
+    const skusComSaida = new Set();
+    listaVendas.forEach(v => {
+        const dtVenda = new Date(v.data_venda);
+        if (dtVenda >= trintaDiasAtras) {
+            skusComSaida.add(String(v.item_id).trim().toUpperCase());
+        }
+    });
+
+    // 3. Cálculo de SKUs "Sem Saída"
+    const qtdComSaida = skusComSaida.size;
+    const qtdSemSaida = totalSkus - qtdComSaida;
+    const porcentagemSemSaida = totalSkus > 0 ? (qtdSemSaida / totalSkus) * 100 : 0;
+
+    // 4. Atualiza a Interface
+    elementoValor.textContent = totalSkus;
+
+    if (elementoTrend) {
+        elementoTrend.innerHTML = `
+            <span class="trend-down">-${porcentagemSemSaida.toFixed(1)}%</span> sem saída (30d)
+        `;
+    }
+
+    console.log(`📦 Total SKUs: ${totalSkus} | Ativos (30d): ${qtdComSaida} | Sem Saída: ${qtdSemSaida}`);
 }

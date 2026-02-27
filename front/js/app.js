@@ -550,12 +550,12 @@ async function processPDF(input) {
 
                 // ✅ MANTÉM REGISTRO DE ERROS (Apenas deste PDF)
                 if (itensNaoEncontrados.length > 0) {
+                    // 🚩 ADICIONE ESTA LINHA ABAIXO:
+                    window.listaSkusNaoEncontrados = itensNaoEncontrados;
+
                     console.warn(`⚠️ SKUs deste PDF não encontrados no estoque:`, itensNaoEncontrados);
-
                     gerenciarPainelErros(itensNaoEncontrados);
-
                 }
-
 
 
                 // ✅ ATUALIZAÇÃO DA TELA
@@ -998,15 +998,30 @@ async function carregarErrosPersistentes() {
 
 console.log('👀 Iniciando monitoramento de SKUs não encontrados...');
 
-//variável para acumular os erros durante o uso do site
-// Tenta carregar do LocalStorage já na criação da variável. 
-// Se não houver nada salvo, aí sim ela começa como um array vazio [].
+// 1. MEMÓRIA GLOBAL (Sincronizada com LocalStorage)
 let memoriaErrosGlobal = JSON.parse(localStorage.getItem('erros_pendentes_v1')) || [];
+
 function gerenciarPainelErros(novosErros) {
     const errorList = document.getElementById('errorList');
+    const painelContainer = document.querySelector('.panel-error');
     if (!errorList) return;
 
-    // 1. ADICIONAR: Só processa se vierem novos erros (array com itens)
+    // 1. ATUALIZA A FRASE E O BOTÃO (Padrão .btn-upload)
+    const fraseOriginal = painelContainer.querySelector('p');
+    if (fraseOriginal) {
+        fraseOriginal.innerHTML = `
+            <div style="margin-bottom: 20px;">
+                <p style="color: #64748b; font-size: 0.9em; margin-bottom: 12px; text-align: center;">
+                    Fazer uma nova leitura dos itens abaixo:
+                </p>
+                <button onclick="reprocessarTodaLista()" class="btn-upload">
+                    🔄 TENTAR NOVAMENTE
+                </button>
+            </div>
+        `;
+    }
+
+    // 2. DADOS: Acumula na memória global
     if (novosErros && novosErros.length > 0) {
         novosErros.forEach(item => {
             const existe = memoriaErrosGlobal.find(e => e.sku === item.sku);
@@ -1016,19 +1031,87 @@ function gerenciarPainelErros(novosErros) {
                 memoriaErrosGlobal.push({ ...item });
             }
         });
+        localStorage.setItem('erros_pendentes_v1', JSON.stringify(memoriaErrosGlobal));
     }
 
-    // 2. SALVAR: Grava a memória atualizada no navegador
-    localStorage.setItem('erros_pendentes_v1', JSON.stringify(memoriaErrosGlobal));
-
-    // 3. LIMPAR E DESENHAR
+    // 3. RENDERIZAÇÃO DOS CARDS (Mantendo seu layout de ícones)
     errorList.innerHTML = '';
+
+    if (memoriaErrosGlobal.length === 0) {
+        errorList.innerHTML = '<li style="color:#94a3b8; text-align:center; padding:20px; font-style:italic;">Aguardando leitura de PDF...</li>';
+        return;
+    }
 
     memoriaErrosGlobal.forEach(item => {
         const li = document.createElement('li');
-        li.className = 'error-card';
+        // Estilo de card para bater com seus 372 SKUs ativos
+        li.style = "background: white; border-radius: 12px; border: 1px solid #f1f5f9; padding: 15px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);";
 
         li.innerHTML = `
+            <div class="error-info">
+                <span class="sku-title" style="display:block; font-weight:800; color:#1e293b; font-size:1.1em;">${item.sku}</span>
+                <span class="sku-qtd" style="color:#94a3b8; font-size:0.8em; font-weight:600; text-transform:uppercase;">Quantidade: ${item.qtd}</span>
+            </div>
+            
+            <div class="error-actions" style="display:flex; gap:10px;">
+                <button onclick="navigator.clipboard.writeText('${item.sku}'); showToast('SKU Copiado!', 'success')" 
+                        class="btn-icon-only" title="Copiar SKU" style="background:none; border:none; cursor:pointer;">
+                    <img src="img/icon-copiar.png" alt="Copiar" style="width:35px; height:35px;">
+                </button>
+                
+                <button onclick="removerErroDaLista('${item.sku}')" 
+                        class="btn-icon-only" title="Remover este erro" style="background:none; border:none; cursor:pointer;">
+                    <img src="img/icon-excluir.png" alt="Excluir" style="width:35px; height:35px;">
+                </button>
+            </div>
+        `;
+        errorList.appendChild(li);
+    });
+}
+
+// 2. FUNÇÃO DO BOTÃO: Reprocessar toda a lista de uma vez
+// 2. REPROCESSAR TODA A LISTA (Botão TENTAR NOVAMENTE)
+async function reprocessarTodaLista() {
+    if (memoriaErrosGlobal.length === 0) return;
+
+    showToast("🔄 Processando bipes e atualizando financeiro...", "info");
+    const dataAtual = document.getElementById('dataLancamento')?.value || new Date().toISOString().split('T')[0];
+    let vendasConfirmadas = 0;
+
+    for (let i = memoriaErrosGlobal.length - 1; i >= 0; i--) {
+        const item = memoriaErrosGlobal[i];
+        
+        // 🚩 O SEGREDO: Aqui o sistema tenta fazer o 'Bipe Retroativo'
+        const processou = await identificarEBaixarEstoque(item.sku, item.qtd, "REPROCESSAMENTO_PDF", dataAtual);
+
+        if (processou) {
+            vendasConfirmadas++;
+            memoriaErrosGlobal.splice(i, 1);
+        }
+    }
+
+    localStorage.setItem('erros_pendentes_v1', JSON.stringify(memoriaErrosGlobal));
+    gerenciarPainelErros([]);
+
+    if (vendasConfirmadas > 0) {
+        if (typeof sincronizarDados === 'function') await sincronizarDados(true);
+        showToast(`💰 ${vendasConfirmadas} vendas integradas ao faturamento!`, "success");
+    } else {
+        showToast("⚠️ SKUs não encontrados ou já processados.", "error");
+    }
+}
+
+// 2. SALVAR: Grava a memória atualizada no navegador
+localStorage.setItem('erros_pendentes_v1', JSON.stringify(memoriaErrosGlobal));
+
+// 3. LIMPAR E DESENHAR
+errorList.innerHTML = '';
+
+memoriaErrosGlobal.forEach(item => {
+    const li = document.createElement('li');
+    li.className = 'error-card';
+
+    li.innerHTML = `
             <div class="error-info">
                 <span class="sku-title">${item.sku}</span>
                 <span class="sku-qtd">Quantidade: ${item.qtd}</span>
@@ -1048,9 +1131,9 @@ function gerenciarPainelErros(novosErros) {
                 </button>
             </div>
         `;
-        errorList.appendChild(li);
-    });
-}
+    errorList.appendChild(li);
+});
+
 
 // Função para remover um item quando você terminar de cadastrar
 function removerErroDaLista(skuParaRemover) {
@@ -1067,6 +1150,52 @@ function removerErroDaLista(skuParaRemover) {
         showToast('Erro removido!', 'info');
     }
 }
+
+
+// 1. RESOLUÇÃO MANUAL (Novo ou Variante)
+async function fluxoResolucao(sku, qtd, tipo) {
+    let skuVinculo = null;
+
+    if (tipo === 'variante') {
+        skuVinculo = prompt(`A qual SKU principal você quer vincular "${sku}"?`);
+        if (!skuVinculo) return;
+    }
+
+    try {
+        // PASSO 1: Adiciona o produto/variante no Banco de Dados
+        const res = await fetch('/api/produtos/resolver-pendencia', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ skuOriginal: sku, tipo, skuVinculo })
+        });
+
+        if (res.ok) {
+            showToast(`✅ SKU ${sku} confirmado! Registrando venda...`, 'success');
+
+            const dataLancamento = document.getElementById('dataLancamento')?.value || new Date().toISOString().split('T')[0];
+            
+            // PASSO 2: EXECUTAR BAIXA E REGISTRO DE VENDA
+            // Certifique-se que essa função 'identificarEBaixarEstoque' faz o INSERT na tabela VENDAS
+            const sucessoTotal = await identificarEBaixarEstoque(sku, qtd, "VENDA_PDF_MANUAL", dataLancamento);
+
+            if (sucessoTotal) {
+                // PASSO 3: Limpeza de memória e atualização de Dash
+                memoriaErrosGlobal = memoriaErrosGlobal.filter(i => i.sku !== sku);
+                localStorage.setItem('erros_pendentes_v1', JSON.stringify(memoriaErrosGlobal));
+                
+                gerenciarPainelErros([]); 
+                
+                // Forçamos a sincronização para atualizar o faturamento de R$ 509k na tela
+                if (typeof sincronizarDados === 'function') await sincronizarDados(true);
+                showToast(`🚀 Venda registrada e faturamento atualizado!`);
+            }
+        }
+    } catch (err) {
+        console.error("❌ Erro no processamento:", err);
+        showToast("Erro ao confirmar produto ou registrar venda.", "error");
+    }
+}
+
 
 function sincronizarErrosComEstoque() {
     // 1. Se não houver erros na lista, nem precisa continuar
