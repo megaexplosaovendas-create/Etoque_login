@@ -613,46 +613,42 @@ app.get('/api/top-produtos', async (req, res) => {
     }
 });
 
-
 app.post('/api/vendas', async (req, res) => {
     try {
-        // 1. RECEBE O DADO EXATO QUE O FRONTEND MANDOU
-        // Se o frontend mandou "D-P12-D)", nós usamos "D-P12-D)"
         const { item_id, quantidade, data_venda, hora_venda, plataforma, cliente_nome } = req.body;
 
-        // 2. REGISTRA A VENDA (Com o ID original, para não quebrar a chave estrangeira)
+        // 1. BUSCA O PRODUTO PELO item_id (O seu SKU/Código)
+        const produto = await Product.findOne({ where: { item_id: item_id } });
+
+        if (!produto) {
+            console.warn(`⚠️ Produto ${item_id} não encontrado no cadastro.`);
+            return res.status(404).json({ error: "Produto não encontrado." });
+        }
+
+        // 2. REGISTRA A VENDA COM OS VALORES DO BANCO
         await Venda.create({
-            item_id: item_id, // 👈 SEM .replace(), usa o original!
-            quantidade: Number(quantidade),
-            data_venda,
-            hora_venda,
+            item_id: item_id,
             plataforma,
-            cliente_nome
+            cliente_nome,
+            quantidade: Number(quantidade),
+            preco_venda: produto.preco_venda, // Agora bate com sua coluna!
+            preco_custo: produto.preco_custo, // Agora bate com sua coluna!
+            data_venda,
+            hora_venda
         });
 
-        // 3. BAIXA O ESTOQUE
-        // Usamos findByPk (Find By Primary Key) que é mais rápido e seguro
-        const produto = await Product.findByPk(item_id);
-
-        if (produto) {
-            // O Sequelize tem uma função pronta para diminuir valores (decrement)
-            // Ela evita números negativos e erros de cálculo
-            await produto.decrement('estoque_atual', { by: Number(quantidade) });
-            console.log(`✅ Estoque baixado: ${item_id} (-${quantidade})`);
-        } else {
-            console.warn(`⚠️ Venda registrada, mas produto ${item_id} não achado para baixar estoque.`);
-        }
+        // 3. BAIXA O ESTOQUE (Agora vai funcionar pois o 'produto' foi achado)
+        await produto.decrement('estoque_atual', { by: Number(quantidade) });
+        
+        console.log(`✅ Sucesso: ${item_id} | Venda: R$ ${produto.preco_venda} | Estoque Atualizado.`);
 
         res.status(201).json({ success: true, message: "Venda e Estoque processados" });
 
     } catch (error) {
-        console.error("❌ Erro no Servidor (Rota Vendas):", error.message);
-        // Retorna o erro exato para ajudar a gente a debugar se precisar
+        console.error("❌ Erro na Rota Vendas:", error.message);
         res.status(500).json({ error: error.message });
     }
 });
-
-
 
 // ==========================================
 // ROTA PARA ARQUIVAR (NO ARQUIVO src/app.js)
@@ -921,23 +917,32 @@ app.get('/api/logistica/contagem-hoje', async (req, res) => {
  * ROTAS PARA O DASHBOARD
  ************************************************/
 
-app.get('/api/produtos', async (req, res) => {
+// ROTA PARA SALVAR NOVO PRODUTO OU EDITAR
+app.post('/api/produtos', async (req, res) => {
     try {
-        // 1. Usamos o modelo 'Product' que você já importou lá em cima
-        // Buscamos apenas a coluna 'estoque_atual'
-        const produtos = await Product.findAll({
-            attributes: ['estoque_atual'],
-            raw: true // Retorna dados puros, mais leve para o gráfico
+        const { item_id, nome_produto, preco_venda, preco_custo, estoque_atual, aliases } = req.body;
+
+        console.log(`📥 Recebido para salvar: ${item_id} - Preço: ${preco_venda}`);
+
+        // O Sequelize vai criar o produto com os novos campos de preço
+        const produto = await Product.create({
+            item_id: item_id,
+            nome_produto: nome_produto,
+            preco_venda: preco_venda, // 🚩 Agora salvando o preço!
+            preco_custo: preco_custo, // 🚩 Agora salvando o custo!
+            estoque_atual: estoque_atual,
+            aliases: aliases,
+            status: 'ativo'
         });
 
-        console.log(`✅ ${produtos.length} produtos enviados para o Dashboard.`);
-        res.json(produtos);
-
+        res.status(201).json(produto);
     } catch (error) {
-        console.error("❌ Erro ao buscar produtos no Sequelize:", error);
-        res.status(500).json({ error: "Erro ao carregar dados do banco" });
+        console.error("❌ Erro ao salvar produto:", error.message);
+        res.status(500).json({ error: error.message });
     }
 });
+
+
 
 // 2. ROTAS DE API
 app.use('/products', ProductRoutes);

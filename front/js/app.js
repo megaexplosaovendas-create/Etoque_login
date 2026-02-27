@@ -113,32 +113,33 @@ async function logout() {
 }
 
 
-// Garante que o botão "Novo Produto" do HTML consiga encontrar a função
+
 window.openModal = function () {
     console.log("Abrindo modal para novo item...");
     const modal = document.getElementById('modal');
 
     if (modal) {
-        // Exibe o modal
         modal.style.display = 'flex';
 
-        // LIMPEZA CRUCIAL: Limpa o ID de edição para o sistema entender que é um NOVO produto
+        // Limpeza do ID de edição
         if (document.getElementById('editIndex')) document.getElementById('editIndex').value = "";
 
-        // Limpa os outros campos
+        // Limpeza dos campos de texto e quantidade
         if (document.getElementById('inpName')) document.getElementById('inpName').value = "";
         if (document.getElementById('inpAliases')) document.getElementById('inpAliases').value = "";
-        if (document.getElementById('inpQty')) document.getElementById('inpQty').value = "";
+        if (document.getElementById('inpQty')) document.getElementById('inpQty').value = "0"; // Começa em zero
 
-        // Altera o título para não confundir com edição
+        // 🚩 NOVAS LINHAS: Limpando os preços para o novo produto
+        if (document.getElementById('inpSalePrice')) document.getElementById('inpSalePrice').value = "";
+        if (document.getElementById('inpCostPrice')) document.getElementById('inpCostPrice').value = "";
+
         if (document.getElementById('modalTitle')) document.getElementById('modalTitle').innerText = "Novo Produto";
 
-        // Coloca o cursor no nome automaticamente
         setTimeout(() => {
             if (document.getElementById('inpName')) document.getElementById('inpName').focus();
         }, 100);
     } else {
-        console.error("Erro: Elemento 'modal' não encontrado no HTML.");
+        console.error("Erro: Elemento 'modal' não encontrado.");
     }
 };
 
@@ -171,15 +172,15 @@ async function carregarProdutos() {
             estoque_atual: Number(p.estoque_atual || 0)
         }));
 
-        // 2. MÁGICA: Remove os erros que já foram cadastrados no banco
-        sincronizarErrosComEstoque();
+        // ❌ REMOVA OU COMENTE A LINHA ABAIXO:
+        // sincronizarErrosComEstoque(); // <-- Esta é a linha que faz sumir sozinho
 
-        console.log("📦 Dados carregados e sincronizados");
+        console.log("📦 Dados carregados (Sincronização automática desativada)");
 
         // 3. Desenha a tela
         render();
 
-        // 4. Desenha o painel de erros já atualizado (sem os que foram cadastrados)
+        // 4. Desenha o painel de erros (Agora ele manterá os itens mesmo que já existam no banco)
         if (typeof gerenciarPainelErros === 'function') {
             gerenciarPainelErros([]);
         }
@@ -242,29 +243,51 @@ async function deletarProdutoBackend(item_id) {
 
 // --- 3. BOTÃO SALVAR ---
 async function saveProduct() {
-    const idOriginal = document.getElementById('editIndex').value;
-    const nome = document.getElementById('inpName').value;
+    // 1. Captura os valores dos campos
+    const name = document.getElementById('inpName').value;
+    const aliases = document.getElementById('inpAliases').value;
+    const qty = document.getElementById('inpQty').value;
+    const idEdicao = document.getElementById('editIndex').value;
 
-    // Se for uma EDIÇÃO, mostramos o modal de confirmação primeiro
-    if (idOriginal) {
-        document.getElementById('confirmMessage').innerText = `Deseja salvar as alterações de "${nome}"?`;
-        document.getElementById('confirmModal').style.display = 'flex';
+    // Capturando os novos preços
+    const precoVenda = document.getElementById('inpSalePrice').value;
+    const precoCusto = document.getElementById('inpCostPrice').value;
 
-        // Configuramos o botão "Sim"
-        document.getElementById('btnConfirmYes').onclick = async () => {
-            document.getElementById('confirmModal').style.display = 'none';
-            await executarEnvioDados(); // Função que realmente envia
-        };
+    const produtoData = {
+        nome_produto: name,
+        item_id: name,
+        aliases: aliases,
+        estoque_atual: qty,
 
-        // Configuramos o botão "Não"
-        document.getElementById('btnConfirmNo').onclick = () => {
-            document.getElementById('confirmModal').style.display = 'none';
-        };
-        return; // Para a execução aqui até o usuário clicar em algo
+        // 🟢 MAPEAMENTO CORRETO (Sem inversão):
+        preco_venda: parseFloat(precoVenda) || 0, // Agora 50 vai para Venda
+        preco_custo: parseFloat(precoCusto) || 0  // Agora 15 vai para Custo
+    };
+    try {
+        // 🚩 AQUI ESTAVA O ERRO: Mudamos de 'products' para 'produtos'
+        const url = idEdicao ? `/api/produtos/${idEdicao}` : '/api/produtos';
+        const method = idEdicao ? 'PUT' : 'POST';
+
+        console.log(`📤 Enviando dados para ${url}...`, produtoData);
+
+        const res = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(produtoData)
+        });
+
+        if (res.ok) {
+            showToast("✅ Produto salvo com sucesso!");
+            closeModal();
+            carregarProdutos(); // Atualiza os 372 SKUs na tela
+        } else {
+            const erroTxt = await res.text();
+            console.error("❌ Erro no servidor:", erroTxt);
+            showToast("Erro ao salvar. Verifique o console.", "error");
+        }
+    } catch (err) {
+        console.error("❌ Erro na requisição:", err);
     }
-
-    // Se for produto NOVO, envia direto
-    await executarEnvioDados();
 }
 
 // Criamos essa função separada para não repetir código
@@ -1072,7 +1095,7 @@ function gerenciarPainelErros(novosErros) {
     });
 }
 
-// 2. FUNÇÃO DO BOTÃO: Reprocessar toda a lista de uma vez
+
 // 2. REPROCESSAR TODA A LISTA (Botão TENTAR NOVAMENTE)
 async function reprocessarTodaLista() {
     if (memoriaErrosGlobal.length === 0) return;
@@ -1104,11 +1127,29 @@ async function reprocessarTodaLista() {
     }
 }
 
-// 2. SALVAR: Grava a memória atualizada no navegador
-localStorage.setItem('erros_pendentes_v1', JSON.stringify(memoriaErrosGlobal));
+// 1. FUNÇÃO PARA CARREGAR E EXIBIR OS ERROS ASSIM QUE ABRIR O SISTEMA
+function carregarPendenciasDoNavegador() {
+    // Busca o que estava salvo no localStorage
+    const salvos = localStorage.getItem('erros_pendentes_v1');
+    if (salvos) {
+        memoriaErrosGlobal = JSON.parse(salvos);
+        console.log(`📋 ${memoriaErrosGlobal.length} SKUs pendentes recuperados.`);
+    }
 
-// 3. LIMPAR E DESENHAR
-errorList.innerHTML = '';
+    // Só desenha se houver algo, caso contrário a função já trata o "Aguardando..."
+    gerenciarPainelErros([]);
+}
+
+// 2. ACIONA A CARGA AO ABRIR A PÁGINA
+document.addEventListener('DOMContentLoaded', carregarPendenciasDoNavegador);
+
+// 🚩 IMPORTANTE: Delete as linhas que você mencionou que estão fora das funções!
+// localStorage.setItem('erros_pendentes_v1', ...); <-- APAGAR DA LINHA SOLTA
+// errorList.innerHTML = ''; <-- APAGAR DA LINHA SOLTA
+
+
+
+
 
 memoriaErrosGlobal.forEach(item => {
     const li = document.createElement('li');

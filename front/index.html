@@ -142,7 +142,7 @@
                         </ul>
                     </li>
 
-                     <li class="nav-item">
+                    <li class="nav-item">
                         <a href="qualidade.html" class="nav-link">
                             <span class="material-symbols-rounded">package_2</span>
                             <span class="nav-label">Produtos</span>
@@ -363,21 +363,36 @@
             <div class="modal">
                 <h2 id="modalTitle">Produto</h2>
                 <input type="hidden" id="editIndex">
+
                 <div class="form-group">
-                    <label>Nome do Produto</label>
+                    <label>Nome do Produto (SKU Principal)</label>
                     <input type="text" id="inpName" placeholder="Ex: KP-397">
                 </div>
+
                 <div class="form-group">
                     <label>Aliases (Separe por vírgula)</label>
                     <input type="text" id="inpAliases" placeholder="Ex: KP397, KP-397 AZUL">
                 </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Preço de Venda (R$)</label>
+                        <input type="number" id="inpSalePrice" step="0.01" placeholder="0.00">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>Preço de Custo (R$)</label>
+                        <input type="number" id="inpCostPrice" step="0.01" placeholder="0.00">
+                    </div>
+                </div>
+
                 <div class="form-group">
-                    <label>Quantidade</label>
+                    <label>Quantidade em Estoque</label>
                     <input type="number" id="inpQty" value="300">
                 </div>
+
                 <div class="modal-actions">
-                    <button onclick="closeModal()">Cancelar</button>
-                    <button onclick="saveProduct()">Salvar</button>
+                    <button onclick="closeModal()" class="btn-secondary">Cancelar</button>
+                    <button onclick="saveProduct()" class="btn-primary">Salvar</button>
                 </div>
             </div>
         </div>

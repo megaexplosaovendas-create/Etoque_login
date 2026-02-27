@@ -236,7 +236,7 @@ h1 {
     /* Mesma sombra do painel principal para consistência */
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 
-    max-height: 350px;
+    max-height: 500px;
     overflow-y: auto;
 }
 
