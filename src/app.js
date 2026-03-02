@@ -918,30 +918,22 @@ app.get('/api/logistica/contagem-hoje', async (req, res) => {
  ************************************************/
 
 // ROTA PARA SALVAR NOVO PRODUTO OU EDITAR
-app.post('/api/produtos', async (req, res) => {
+app.get('/api/produtos', async (req, res) => {
     try {
-        const { item_id, nome_produto, preco_venda, preco_custo, estoque_atual, aliases } = req.body;
-
-        console.log(`📥 Recebido para salvar: ${item_id} - Preço: ${preco_venda}`);
-
-        // O Sequelize vai criar o produto com os novos campos de preço
-        const produto = await Product.create({
-            item_id: item_id,
-            nome_produto: nome_produto,
-            preco_venda: preco_venda, // 🚩 Agora salvando o preço!
-            preco_custo: preco_custo, // 🚩 Agora salvando o custo!
-            estoque_atual: estoque_atual,
-            aliases: aliases,
-            status: 'ativo'
+        // Buscamos os produtos ativos para o seu controle de estoque
+        const produtos = await Product.findAll({
+            where: { status: 'ativo' },
+            attributes: ['nome_produto', 'estoque_atual', 'item_id'],
+            raw: true
         });
 
-        res.status(201).json(produto);
+        console.log(`📊 Enviando ${produtos.length} produtos para o dashboard.`);
+        res.json(produtos);
     } catch (error) {
-        console.error("❌ Erro ao salvar produto:", error.message);
+        console.error("❌ Erro ao buscar produtos:", error.message);
         res.status(500).json({ error: error.message });
     }
 });
-
 
 
 // 2. ROTAS DE API

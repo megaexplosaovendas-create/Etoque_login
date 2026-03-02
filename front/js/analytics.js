@@ -59,15 +59,18 @@ async function carregarHistoricoVendas() {
         if (Array.isArray(dados) && dados.length > 0) {
             window.vendasHistorico = dados;
             localStorage.setItem('vendasHistorico', JSON.stringify(dados));
-            console.log("2. Dados salvos! Total:", window.vendasHistorico.length);
+            
+            // 🚀 AQUI ESTÁ O SEGREDO:
+            // Chamamos a visão geral para processar os 5.915 bipes
+            atualizarVisaoGeral(window.vendasHistorico);
 
-            // AGORA SIM chamamos o ranking
+            // Depois chamamos o ranking que você já tinha
             await renderizarTop10();
-        } else {
-            console.warn("O servidor não retornou nenhuma venda.");
-        }
+            
+            console.log("✅ Dashboard e Gráficos atualizados!");
+        } 
     } catch (erro) {
-        console.error("Erro na comunicação com o servidor:", erro);
+        console.error("Erro na comunicação:", erro);
     }
 }
 
@@ -757,10 +760,10 @@ async function renderizarTop10() {
         // 3. SALVA NA MEMÓRIA GLOBAL (para outras funções)
         window.vendasHistorico = dados;
 
-          // 🚩 INSERIR AQUI PARA NÃO ALTERAR A LÓGICA EXISTENTE:
+        // 🚩 INSERIR AQUI PARA NÃO ALTERAR A LÓGICA EXISTENTE:
         if (!window.todosOsProdutos) {
             await carregarProdutosParaMemoria();
-        } 
+        }
 
         // 🚀 PASSO A: Primeiro, calcula o faturamento (é mais rápido)
         if (typeof atualizarKpiFaturamento === 'function') {
@@ -776,7 +779,7 @@ async function renderizarTop10() {
         if (typeof atualizarKpiSkusAtivos === 'function') {
             atualizarKpiSkusAtivos(dados);
         }
-        
+
         // (PASSO C):
         if (typeof atualizarKpiTicketMedio === 'function') {
             try {
@@ -1638,18 +1641,31 @@ async function carregarDadosDoBanco() {
 }
 
 function renderizarGraficoEstoque(listaProdutos) {
+    // 🔍 VEJA ISSO NO CONSOLE (F12)
+    console.log("📦 Dados brutos recebidos para o gráfico:", listaProdutos);
+
+    if (!listaProdutos || listaProdutos.length === 0) {
+        console.warn("⚠️ Gráfico não renderizado: A lista de produtos está vazia.");
+        return;
+    }
+
     const counts = { critico: 0, alerta: 0, bom: 0 };
 
     listaProdutos.forEach(p => {
-        // Garante que o nome da coluna aqui seja igual ao do seu MySQL (estoque_atual)
+        // Garantimos que 'estoque_atual' existe no objeto vindo do banco
         const estoque = Number(p.estoque_atual || 0);
         if (estoque <= 0) counts.critico++;
         else if (estoque <= 5) counts.alerta++;
         else counts.bom++;
     });
 
+    console.log("📈 Contagem final para o Gráfico:", counts);
+
     const ctx = document.getElementById('stockDonutChart');
-    if (!ctx) return;
+    if (!ctx) {
+        console.error("❌ Erro: Elemento 'stockDonutChart' não encontrado no HTML.");
+        return;
+    }
 
     if (window.stockChartInstance) window.stockChartInstance.destroy();
 
@@ -1756,32 +1772,42 @@ function atualizarKpiFaturamento(listaProdutos) {
 // ======================================================
 //Ticket Médio
 // ======================================================
-function atualizarKpiTicketMedio(listaProdutos) {
-    const elementoValor = document.getElementById('dashNetSales');
-    // Busca a tendência dentro do mesmo card
-    const card = elementoValor.closest('.modern-kpi-card');
+function atualizarKpiTicketMedio(listaVendas) {
+    const elementoValor = document.getElementById('dashNetSales'); // Verifique se o ID é este mesmo
+    const card = elementoValor ? elementoValor.closest('.modern-kpi-card') : null;
     const elementoTrend = card ? card.querySelector('.modern-kpi-trend') : null;
 
     if (!elementoValor) return;
 
+    // 🔍 DEBUG: Abra o console (F12) e veja se aparece algo aqui
+    console.log("Calculando Ticket Médio com:", listaVendas.length, "registros");
+
     const agora = new Date();
     const mesAtual = agora.getMonth();
     const anoAtual = agora.getFullYear();
-    const mesPassado = mesAtual === 0 ? 11 : mesAtual - 1;
-    const anoPassado = mesAtual === 0 ? anoAtual - 1 : anoAtual;
+
+    // Cálculo do mês passado
+    let mesPassado = mesAtual - 1;
+    let anoPassado = anoAtual;
+    if (mesAtual === 0) {
+        mesPassado = 11;
+        anoPassado = anoAtual - 1;
+    }
 
     let faturamentoAtual = 0, faturamentoAnterior = 0;
     let pedidosAtual = 0, pedidosAnterior = 0;
 
-    listaProdutos.forEach(v => {
+    listaVendas.forEach(v => {
         if (!v.data_venda) return;
 
-        const partes = v.data_venda.split('-');
+        // Trata a data (YYYY-MM-DD ou DD/MM/YYYY)
+        const partes = v.data_venda.includes('-') ? v.data_venda.split('-') : v.data_venda.split('/');
         const anoVenda = parseInt(partes[0]);
         const mesVenda = parseInt(partes[1]) - 1;
 
-        const preco = parseFloat(v.preco_venda || 0);
-        const qtd = Number(v.quantidade || 0);
+        // 🚩 Garante que os valores são números e não NULL
+        const preco = parseFloat(v.preco_venda) || 0;
+        const qtd = parseInt(v.quantidade) || 0;
 
         if (mesVenda === mesAtual && anoVenda === anoAtual) {
             faturamentoAtual += (preco * qtd);
@@ -1795,14 +1821,21 @@ function atualizarKpiTicketMedio(listaProdutos) {
     const ticketAtual = pedidosAtual > 0 ? faturamentoAtual / pedidosAtual : 0;
     const ticketAnterior = pedidosAnterior > 0 ? faturamentoAnterior / pedidosAnterior : 0;
 
-    // 💰 Formatação para Real (BRL)
+    // 💰 Exibe o valor formatado
     elementoValor.textContent = ticketAtual.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-    if (elementoTrend && ticketAnterior > 0) {
-        const porcentagem = ((ticketAtual - ticketAnterior) / ticketAnterior) * 100;
-        const classe = porcentagem >= 0 ? 'trend-up' : 'trend-down';
-        const sinal = porcentagem >= 0 ? '+' : '';
-        elementoTrend.innerHTML = `<span class="${classe}">${sinal}${porcentagem.toFixed(1)}%</span> vs mês passado`;
+    // 📈 Calcula a tendência
+    if (elementoTrend) {
+        if (ticketAnterior > 0) {
+            const porcentagem = ((ticketAtual - ticketAnterior) / ticketAnterior) * 100;
+            const classe = porcentagem >= 0 ? 'trend-up' : 'trend-down';
+            const sinal = porcentagem >= 0 ? '+' : '';
+            const icone = porcentagem >= 0 ? '↑' : '↓';
+
+            elementoTrend.innerHTML = `<span class="${classe}">${icone} ${sinal}${porcentagem.toFixed(1)}%</span> vs mês passado`;
+        } else {
+            elementoTrend.innerHTML = `<span>S/ dados mês ant.</span>`;
+        }
     }
 }
 
@@ -1849,3 +1882,97 @@ function atualizarKpiSkusAtivos(listaVendas) {
 
     console.log(`📦 Total SKUs: ${totalSkus} | Ativos (30d): ${qtdComSaida} | Sem Saída: ${qtdSemSaida}`);
 }
+
+
+// ======================================================
+//             Visão Geral de Desempenho
+// ======================================================
+function atualizarVisaoGeral(listaVendas) {
+    if (!listaVendas || listaVendas.length === 0) {
+        console.warn("⚠️ Lista de vendas vazia ou não carregada.");
+        return;
+    }
+
+    // 1. Captura o filtro e define a data base (Hoje: 02/03/2026)
+    const filtroElemento = document.getElementById('performanceFilter');
+    const filtro = filtroElemento ? filtroElemento.value : 'current';
+    const agora = new Date();
+
+    // 🚩 CÁLCULO DO MÊS E ANO ALVO (O que estava faltando)
+    const mesAlvo = filtro === 'current' ? agora.getMonth() : (agora.getMonth() === 0 ? 11 : agora.getMonth() - 1);
+    const anoAlvo = filtro === 'current' ? agora.getFullYear() : (agora.getMonth() === 0 ? agora.getFullYear() - 1 : agora.getFullYear());
+
+    console.log(`📅 Filtro: ${filtro} | Buscando: ${mesAlvo + 1}/${anoAlvo}`);
+
+    // 2. Filtra as vendas (Agora ele reconhece o mesAlvo e anoAlvo)
+    const filtradas = listaVendas.filter(v => {
+        if (!v.data_venda) return false;
+        const dataVenda = new Date(v.data_venda);
+        return dataVenda.getMonth() === mesAlvo && dataVenda.getFullYear() === anoAlvo;
+    });
+
+    console.log(`📊 Vendas encontradas para o período: ${filtradas.length}`);
+    
+    let receitaTotal = 0;
+    const faturamentoPorDia = {};
+
+    filtradas.forEach(v => {
+        const valorVenda = parseFloat(v.preco_venda || 0) * parseInt(v.quantidade || 1);
+        receitaTotal += valorVenda;
+
+        const dia = new Date(v.data_venda).getDate();
+        faturamentoPorDia[dia] = (faturamentoPorDia[dia] || 0) + valorVenda;
+    });
+
+    // 3. Atualiza os cards de texto (Com travas de segurança)
+    const elPedidos = document.getElementById('overviewTotalOrders');
+    const elReceita = document.getElementById('overviewTotalSpent');
+
+    if (elPedidos) elPedidos.textContent = filtradas.length.toLocaleString('pt-BR');
+    if (elReceita) elReceita.textContent = receitaTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    // 4. Renderiza o gráfico de linha para as suas 6 lojas
+    renderizarGraficoTendencia(faturamentoPorDia);
+}
+
+
+function renderizarGraficoTendencia(dadosDiarios) {
+    const ctx = document.getElementById('mainTrendChart').getContext('2d');
+
+    // Cria labels para os 31 dias do mês
+    const labels = Array.from({ length: 31 }, (_, i) => i + 1);
+    const valores = labels.map(dia => dadosDiarios[dia] || 0);
+
+    if (window.mainTrendInstance) window.mainTrendInstance.destroy();
+
+    window.mainTrendInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Faturamento diário',
+                data: valores,
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 3,
+                pointBackgroundColor: '#3b82f6'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { callback: v => 'R$ ' + v.toLocaleString('pt-BR') } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+}
+
+document.getElementById('performanceFilter').addEventListener('change', () => {
+    // Agora usando o nome correto da sua variável global
+    atualizarVisaoGeral(window.vendasHistorico); 
+});
