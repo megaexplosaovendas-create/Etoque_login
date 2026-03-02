@@ -516,9 +516,11 @@ async function processPDF(input) {
     const seletor = document.getElementById('dataLancamento');
     const dataEscolhida = seletor && seletor.value ? seletor.value : new Date().toISOString().split('T')[0];
 
-    // Resetamos os contadores para cada novo upload de PDF
     let totalItensAbatidos = 0;
     let itensNaoEncontrados = [];
+
+    // 🚩 NOVA VARIÁVEL: Para guardar os pedidos reais (ex: 300)
+    let qtdPedidosDestePDF = 0;
 
     console.log('📄 Iniciando processamento de PDF...');
 
@@ -544,67 +546,65 @@ async function processPDF(input) {
 
                     rowKeys.sort((a, b) => b - a);
 
+                    // Transforma a página inteira em um texto único para facilitar a busca do cabeçalho
+                    let textoDaPagina = rowKeys.map(y => rows[y].join(' ')).join(' ');
+
+                    // 🚩 NOVA LÓGICA: Busca "Qtd. de pedidos: 300"
+                    const matchCabecalho = textoDaPagina.match(/Qtd\.\s*de\s*pedidos:\s*(\d+)/i);
+                    if (matchCabecalho && qtdPedidosDestePDF === 0) {
+                        qtdPedidosDestePDF = parseInt(matchCabecalho[1]);
+                        console.log(`📦 Encontrado Cabeçalho! Qtd Pedidos Reais: ${qtdPedidosDestePDF}`);
+                    }
+
                     for (let y of rowKeys) {
                         let lineText = rows[y].join(' ');
+                        // Extrai itens linha a linha (Sua lógica original)
                         let match = lineText.match(/(.*?)\s+(?:x|X|×|☑|v)\s*(\d+)\s*$/);
 
                         if (match) {
                             let skuExtraido = match[1].trim();
                             let qtdVenda = parseInt(match[2]);
 
-                            // MANTÉM SUA FUNÇÃO ORIGINAL DE DÉBITO UM POR UM
                             const encontrado = await identificarEBaixarEstoque(skuExtraido, qtdVenda, file.name, dataEscolhida);
 
                             if (encontrado) {
                                 totalItensAbatidos += qtdVenda;
-                                // Mostra cada SKU lido deste PDF no console
                                 console.log(`✅ [Lido no PDF] SKU: ${skuExtraido} | Qtd: ${qtdVenda}`);
                             } else {
+                                // ... (Sua lógica de erro original foi mantida)
                                 let erroExistente = itensNaoEncontrados.find(e => e.sku === skuExtraido);
-                                if (erroExistente) {
-                                    erroExistente.qtd += qtdVenda;
-                                } else {
-                                    itensNaoEncontrados.push({
-                                        sku: skuExtraido,
-                                        qtd: qtdVenda
-                                    });
-                                }
+                                if (erroExistente) erroExistente.qtd += qtdVenda;
+                                else itensNaoEncontrados.push({ sku: skuExtraido, qtd: qtdVenda });
                             }
                         }
                     }
                 }
 
-                // ✅ MANTÉM REGISTRO DE ERROS (Apenas deste PDF)
+                // ... (O resto da sua função continua igual)
                 if (itensNaoEncontrados.length > 0) {
-                    // 🚩 ADICIONE ESTA LINHA ABAIXO:
                     window.listaSkusNaoEncontrados = itensNaoEncontrados;
-
                     console.warn(`⚠️ SKUs deste PDF não encontrados no estoque:`, itensNaoEncontrados);
                     gerenciarPainelErros(itensNaoEncontrados);
                 }
 
-
-                // ✅ ATUALIZAÇÃO DA TELA
                 if (typeof carregarProdutos === 'function') carregarProdutos();
 
                 const usuarioLogado = sessionStorage.getItem('username') || 'Desconhecido';
-                registrarLogViaFetch(usuarioLogado, 'UPLOAD_PDF', `Processou PDF: ${file.name} | Total: ${totalItensAbatidos} itens.`);
 
-
+                // 🚩 ATUALIZA O LOG PARA MOSTRAR OS PEDIDOS REAIS
+                registrarLogViaFetch(usuarioLogado, 'UPLOAD_PDF', `Processou PDF: ${file.name} | Itens: ${totalItensAbatidos} | Pedidos: ${qtdPedidosDestePDF}`);
                 if (totalItensAbatidos > 0) {
-                    // Alerta visual focado apenas no arquivo atual
-                    showToast(`✅ PDF Processado: ${totalItensAbatidos} unidades lidas.`, 'success');
-
+                    showToast(`✅ PDF Processado: ${qtdPedidosDestePDF} pedidos lidos.`, 'success');
                     console.log(`--- Resumo do Arquivo ---`);
-                    console.log(`📦 Total de unidades lidas neste PDF: ${totalItensAbatidos}`);
+                    console.log(`📦 Total de Pedidos Reais: ${qtdPedidosDestePDF}`);
+                    console.log(`🛒 Total de Unidades Descontadas: ${totalItensAbatidos}`);
                     console.log(`--------------------------`);
 
-                    // Chamada silenciosa (true) para não imprimir o acumulado do banco
-                    if (typeof sincronizarDados === 'function') {
-                        sincronizarDados(true);
+                    // 👉 ADICIONE APENAS ESTA LINHA AQUI:
+                    if (qtdPedidosDestePDF > 0) {
+                        salvarPedidosNoBanco(qtdPedidosDestePDF, dataEscolhida);
                     }
                 }
-
             } catch (err) {
                 console.error("❌ Erro no PDF:", err);
                 showToast("Erro ao processar arquivo.", "error");
@@ -615,6 +615,34 @@ async function processPDF(input) {
     input.value = "";
 }
 
+// 🚩 Adicione isto ao final do seu front/js/app.js
+async function salvarPedidosNoBanco(quantidade, data) {
+    try {
+        // 🚩 Se estiver no XAMPP, ele usa a porta 3000. Se estiver na KingHost, usa o domínio real.
+        const urlBase = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                        ? 'http://localhost:3000' 
+                        : window.location.origin;
+
+        console.log(`🚀 Ambiente: ${window.location.hostname} | Salvando ${quantidade} pedidos...`);
+        
+        const res = await fetch(`${urlBase}/api/historico-pedidos`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                quantidade_pedidos: quantidade, 
+                data_registro: data 
+            })
+        });
+
+        if (res.ok) {
+            console.log("✅ Sucesso: O número de pedidos (caixas) foi salvo!");
+        } else {
+            console.error("⚠️ O servidor recusou. Verifique se a rota existe no seu server.js local.");
+        }
+    } catch (erro) {
+        console.error("❌ Erro de conexão:", erro);
+    }
+}
 
 async function registrarLogViaFetch(usuario, acao, detalhes) {
     // 1. Garante o nome do usuário

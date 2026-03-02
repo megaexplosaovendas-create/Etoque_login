@@ -22,6 +22,7 @@ const SequelizeStore = require('connect-session-sequelize')(session.Store);
 const Product = require('./models/Product');
 const User = require('./models/User');    // Faltava
 const Venda = require('./models/Vendas'); // Faltava
+const  HistoricoPedido  = require('./models/HistoricoPedido');
 const BipagemHistorico = require('./models/BipagemHistorico'); // ✅ Com UM ponto só
 
 // Rotas e Serviços Extras
@@ -935,6 +936,57 @@ app.get('/api/produtos', async (req, res) => {
     }
 });
 
+
+// Rota para salvar a quantidade de pedidos (caixas) do PDF
+app.post('/api/historico-pedidos', async (req, res) => {
+    try {
+        const { quantidade_pedidos, data_registro } = req.body;
+
+        if (!quantidade_pedidos || !data_registro) {
+            return res.status(400).json({ erro: "Dados incompletos recebidos pelo backend." });
+        }
+
+        // Salva usando o Model que você acabou de criar
+        await HistoricoPedido.create({
+            quantidade: quantidade_pedidos,
+            data_registro: data_registro
+        });
+
+        console.log(`✅ Sucesso: ${quantidade_pedidos} pedidos registrados no histórico.`);
+        res.status(201).json({ mensagem: "Pedidos salvos com sucesso!" });
+    } catch (error) {
+        console.error("❌ Erro ao salvar histórico via Sequelize:", error);
+        res.status(500).json({ erro: error.message });
+    }
+});
+
+// Rota para o Dashboard somar o histórico real de caixas/pedidos
+app.get('/api/total-pedidos-reais', async (req, res) => {
+    try {
+        const { mes, ano } = req.query;
+        if (!mes || !ano) return res.json({ total: 0 });
+
+        // Criamos o início e o fim do mês de forma robusta
+        // Mês no JS Date é 0-11, então (mes - 1)
+        const dataInicio = new Date(ano, mes - 1, 1, 0, 0, 0);
+        const dataFim = new Date(ano, mes, 0, 23, 59, 59); // Dia 0 do mês seguinte é o último deste
+
+        console.log(`📡 Filtrando Banco: ${dataInicio.toISOString()} até ${dataFim.toISOString()}`);
+
+        const total = await HistoricoPedido.sum('quantidade', {
+            where: {
+                data_registro: {
+                    [Op.between]: [dataInicio, dataFim]
+                }
+            }
+        });
+
+        res.json({ total: total || 0 });
+    } catch (error) {
+        console.error("❌ Erro na soma:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
 
 // 2. ROTAS DE API
 app.use('/products', ProductRoutes);

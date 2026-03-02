@@ -59,16 +59,16 @@ async function carregarHistoricoVendas() {
         if (Array.isArray(dados) && dados.length > 0) {
             window.vendasHistorico = dados;
             localStorage.setItem('vendasHistorico', JSON.stringify(dados));
-            
+
             // 🚀 AQUI ESTÁ O SEGREDO:
             // Chamamos a visão geral para processar os 5.915 bipes
             atualizarVisaoGeral(window.vendasHistorico);
 
             // Depois chamamos o ranking que você já tinha
             await renderizarTop10();
-            
+
             console.log("✅ Dashboard e Gráficos atualizados!");
-        } 
+        }
     } catch (erro) {
         console.error("Erro na comunicação:", erro);
     }
@@ -1907,31 +1907,41 @@ function atualizarVisaoGeral(listaVendas) {
     // 2. Filtra as vendas (Agora ele reconhece o mesAlvo e anoAlvo)
     const filtradas = listaVendas.filter(v => {
         if (!v.data_venda) return false;
-        const dataVenda = new Date(v.data_venda);
+
+        // Adicionamos 'T12:00:00' para que o fuso horário do Brasil 
+        // não jogue a venda para o dia/mês anterior
+        const dataVenda = new Date(v.data_venda + 'T12:00:00');
+
         return dataVenda.getMonth() === mesAlvo && dataVenda.getFullYear() === anoAlvo;
     });
-
     console.log(`📊 Vendas encontradas para o período: ${filtradas.length}`);
-    
+
     let receitaTotal = 0;
+    let totalItensVendidos = 0; // 🚩 1. Criamos a variável para somar os produtos reais
     const faturamentoPorDia = {};
 
     filtradas.forEach(v => {
-        const valorVenda = parseFloat(v.preco_venda || 0) * parseInt(v.quantidade || 1);
-        receitaTotal += valorVenda;
+        const qtd = parseInt(v.quantidade || 1); // Captura a quantidade vendida nesta linha
+        const valorVenda = parseFloat(v.preco_venda || 0) * qtd;
 
-        const dia = new Date(v.data_venda).getDate();
+        receitaTotal += valorVenda;
+        totalItensVendidos += qtd; // 🚩 2. Somamos a quantidade (ex: as 2 unidades do CS-30)
+
+        const partes = v.data_venda.split('-'); // Quebra "2026-03-01" em ["2026", "03", "01"]
+        const dia = parseInt(partes[2]);
+
         faturamentoPorDia[dia] = (faturamentoPorDia[dia] || 0) + valorVenda;
     });
 
     // 3. Atualiza os cards de texto (Com travas de segurança)
-    const elPedidos = document.getElementById('overviewTotalOrders');
     const elReceita = document.getElementById('overviewTotalSpent');
 
-    if (elPedidos) elPedidos.textContent = filtradas.length.toLocaleString('pt-BR');
+    // 🚩 3. Trocamos o 'filtradas.length' pelo 'totalItensVendidos'
     if (elReceita) elReceita.textContent = receitaTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-    // 4. Renderiza o gráfico de linha para as suas 6 lojas
+    // 🚩 Passe os parâmetros para a função buscar o mês certo no banco
+    atualizarCardsDashboard(mesAlvo + 1, anoAlvo);
+
     renderizarGraficoTendencia(faturamentoPorDia);
 }
 
@@ -1974,5 +1984,34 @@ function renderizarGraficoTendencia(dadosDiarios) {
 
 document.getElementById('performanceFilter').addEventListener('change', () => {
     // Agora usando o nome correto da sua variável global
-    atualizarVisaoGeral(window.vendasHistorico); 
+    atualizarVisaoGeral(window.vendasHistorico);
 });
+
+
+
+
+// ======================================================
+//             atualizar Cards
+// ======================================================
+
+async function atualizarCardsDashboard(mes, ano) {
+    try {
+        // Log para você conferir no console (F12) se o mês/ano estão certos ao trocar o filtro
+        console.log(`📡 Buscando pedidos reais para: ${mes}/${ano}`);
+
+        // Monta a URL com os parâmetros de consulta
+        const url = `/api/total-pedidos-reais?mes=${mes}&ano=${ano}`;
+
+        const res = await fetch(url);
+        const dados = await res.json();
+
+        const elPedidos = document.getElementById('overviewTotalOrders');
+        if (elPedidos) {
+            // Atualiza o card com o valor que veio do banco (já filtrado)
+            elPedidos.textContent = Number(dados.total || 0).toLocaleString('pt-BR');
+            console.log(`✅ Card atualizado com: ${dados.total}`);
+        }
+    } catch (erro) {
+        console.error("❌ Erro ao buscar total de pedidos filtrado:", erro);
+    }
+}
