@@ -244,14 +244,12 @@
 
                 <div class="modern-middle-grid">
                     <div class="modern-chart-card">
-                        <div class="chart-header-flex">
-                            <h3 style="margin:0; font-size:1.1em;">Visão Geral de Desempenho</h3>
-                            <select id="performanceFilter"
-                                style="border:none; background:#f1f5f9; padding:5px 10px; border-radius:8px; outline:none;">
-                                <option value="current">Este Mês</option>
-                                <option value="last">Mês Passado</option>
-                            </select>
-                        </div>
+                        <select id="performanceFilter"
+                            style="border:none; background:#f1f5f9; padding:5px 10px; border-radius:8px; outline:none; font-weight: 500;">
+                            <option value="current" selected>Este Mês</option>
+                            <option value="last">Mês Passado</option>
+                            <option value="year">Todo o Ano</option>
+                        </select>
                         <div style="display:flex; gap:20px;">
                             <div style="flex:1; display:flex; flex-direction:column; gap:15px; justify-content:center;">
                                 <div style="background:#f8fafc; padding:15px; border-radius:12px;">
@@ -259,10 +257,11 @@
                                     <div style="font-size:1.5em; font-weight:700; color:var(--text-main);"
                                         id="overviewTotalOrders">0</div>
                                 </div>
-                                <div style="background:#f8fafc; padding:15px; border-radius:12px;">
-                                    <small style="color:var(--text-muted);">Receita Total</small>
-                                    <div style="font-size:1.5em; font-weight:700; color:var(--text-main);"
-                                        id="overviewTotalSpent">R$ 0,00</div>
+                                <div class="modern-kpi-card">
+                                    <h4 style="margin:0; color:#64748b; font-size:0.9em;">Total de Visitas</h4>
+                                    <div id="dashTotalVisits" style="font-size:1.5em; font-weight:700; margin:10px 0;">0
+                                    </div>
+                                    <div class="modern-kpi-trend"><span style="color:#94a3b8;">S/ dados</span></div>
                                 </div>
                             </div>
                             <div style="flex:3; height: 250px;">

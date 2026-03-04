@@ -189,7 +189,7 @@ function updateSecaoLogistica(logsBanco) {
     }
 
     // Progresso Meta (Certifique-se que META_DIARIA está definida, ex: 500)
-    const META_DIARIA = 500; 
+    const META_DIARIA = 500;
     const progresso = Math.min((total / META_DIARIA) * 100, 100).toFixed(1);
     document.getElementById('metaProgresso').innerText = progresso + "%";
     document.getElementById('barraMeta').style.width = progresso + "%";
@@ -1662,6 +1662,9 @@ async function carregarDadosDoBanco() {
     }
 }
 
+// ======================================================
+//                   Grafico Estoque
+// ======================================================
 function renderizarGraficoEstoque(listaProdutos) {
     // 🔍 VEJA ISSO NO CONSOLE (F12)
     console.log("📦 Dados brutos recebidos para o gráfico:", listaProdutos);
@@ -1733,8 +1736,10 @@ window.buscarImagemAlternativa = function (imgElement, sku) {
 
 
 // ======================================================
-// Faturamento
+//                   Faturamento
 // ======================================================
+
+
 function atualizarKpiFaturamento(listaProdutos) {
     const elementoValor = document.getElementById('dashTotalSales');
     const elementoTrend = document.querySelector('.modern-kpi-trend');
@@ -1909,113 +1914,133 @@ function atualizarKpiSkusAtivos(listaVendas) {
 // ======================================================
 //             Visão Geral de Desempenho
 // ======================================================
-function atualizarVisaoGeral(listaVendas) {
-    if (!listaVendas || listaVendas.length === 0) {
-        console.warn("⚠️ Lista de vendas vazia ou não carregada.");
-        return;
-    }
-
-    // 1. Captura o filtro e define a data base (Hoje: 02/03/2026)
+async function atualizarVisaoGeral() {
     const filtroElemento = document.getElementById('performanceFilter');
-    const filtro = filtroElemento ? filtroElemento.value : 'current';
-    const agora = new Date();
+    if (!filtroElemento) return;
+    
+    const filtro = filtroElemento.value;
+    console.log(`🔵 Sincronizando: Filtro [${filtro}]`);
 
-    // 🚩 CÁLCULO DO MÊS E ANO ALVO (O que estava faltando)
-    const mesAlvo = filtro === 'current' ? agora.getMonth() : (agora.getMonth() === 0 ? 11 : agora.getMonth() - 1);
-    const anoAlvo = filtro === 'current' ? agora.getFullYear() : (agora.getMonth() === 0 ? agora.getFullYear() - 1 : agora.getFullYear());
+    try {
+        const resResumo = await fetch(`/api/dashboard/resumo?filtro=${filtro}`);
+        const dados = await resResumo.json();
 
-    console.log(`📅 Filtro: ${filtro} | Buscando: ${mesAlvo + 1}/${anoAlvo}`);
+        const atualizarTexto = (id, valor, isMoeda = false) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.textContent = isMoeda 
+                    ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor)
+                    : Number(valor).toLocaleString('pt-BR');
+            }
+        };
 
-    // 2. Filtra as vendas (Agora ele reconhece o mesAlvo e anoAlvo)
-    const filtradas = listaVendas.filter(v => {
-        if (!v.data_venda) return false;
+        // --- ATUALIZAÇÃO DOS CARDS ---
+        atualizarTexto('dashTotalSales', dados.faturamento, true);    // Faturamento Principal
+        atualizarTexto('overviewTotalSpent', dados.faturamento, true); // Receita
+        atualizarTexto('dashTotalOrders', dados.bipes);               // Bipes (Scans)
+        atualizarTexto('dashNetSales', dados.ticketMedio, true);       // Ticket Médio
+        
+        // 🚩 A LINHA QUE ESTAVA FALTANDO:
+        atualizarTexto('overviewTotalOrders', dados.pedidosReais || dados.bipes); 
 
-        // Adicionamos 'T12:00:00' para que o fuso horário do Brasil 
-        // não jogue a venda para o dia/mês anterior
-        const dataVenda = new Date(v.data_venda + 'T12:00:00');
+        // --- ATUALIZAÇÃO DO GRÁFICO ---
+        const rotaGrafico = (filtro === 'year') ? '/api/dashboard/grafico-anual' : `/api/dashboard/grafico-diario?filtro=${filtro}`;
+        const resGrafico = await fetch(rotaGrafico);
+        const dadosGrafico = await resGrafico.json();
 
-        return dataVenda.getMonth() === mesAlvo && dataVenda.getFullYear() === anoAlvo;
-    });
-    console.log(`📊 Vendas encontradas para o período: ${filtradas.length}`);
+        if (typeof renderizarGraficoTendencia === 'function') {
+            renderizarGraficoTendencia(dadosGrafico, filtro);
+        }
 
-    let receitaTotal = 0;
-    let totalItensVendidos = 0; // 🚩 1. Criamos a variável para somar os produtos reais
-    const faturamentoPorDia = {};
-
-    filtradas.forEach(v => {
-        const qtd = parseInt(v.quantidade || 1); // Captura a quantidade vendida nesta linha
-        const valorVenda = parseFloat(v.preco_venda || 0) * qtd;
-
-        receitaTotal += valorVenda;
-        totalItensVendidos += qtd; // 🚩 2. Somamos a quantidade (ex: as 2 unidades do CS-30)
-
-        const partes = v.data_venda.split('-'); // Quebra "2026-03-01" em ["2026", "03", "01"]
-        const dia = parseInt(partes[2]);
-
-        faturamentoPorDia[dia] = (faturamentoPorDia[dia] || 0) + valorVenda;
-    });
-
-    // 3. Atualiza os cards de texto (Com travas de segurança)
-    const elReceita = document.getElementById('overviewTotalSpent');
-
-    // 🚩 3. Trocamos o 'filtradas.length' pelo 'totalItensVendidos'
-    if (elReceita) elReceita.textContent = receitaTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-    // 🚩 Passe os parâmetros para a função buscar o mês certo no banco
-    atualizarCardsDashboard(mesAlvo + 1, anoAlvo);
-
-    renderizarGraficoTendencia(faturamentoPorDia);
-
-    const mesParaConsulta = mesAlvo + 1;
-    const anoParaConsulta = anoAlvo;
-
-    // Atualiza todos os cards sincronizados
-    atualizarCardsDashboard(mesParaConsulta, anoParaConsulta); // Pedidos Reais
-    atualizarKpiBipagens(mesParaConsulta, anoParaConsulta);    // 🚩 Total de Bipes
+    } catch (erro) {
+        console.error("❌ Erro catastrófico:", erro);
+    }
 }
 
+// ======================================================
+//             Grafico Tendencia
+// ======================================================
 
-function renderizarGraficoTendencia(dadosDiarios) {
+function renderizarGraficoTendencia(dados, tipoFiltro = 'current') {
     const ctx = document.getElementById('mainTrendChart').getContext('2d');
 
-    // Cria labels para os 31 dias do mês
-    const labels = Array.from({ length: 31 }, (_, i) => i + 1);
-    const valores = labels.map(dia => dadosDiarios[dia] || 0);
+    let labels, valores, labelBotao;
+
+    // 1. Lógica de Labels e Dados
+    if (tipoFiltro === 'year' || tipoFiltro === 'ano') {
+        labels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+        // Ajuste: Busca os meses do objeto anoAtual (ou direto de dados se não for separado)
+        valores = labels.map((_, i) => (dados.anoAtual ? dados.anoAtual[i + 1] : dados[i + 1]) || 0);
+        labelBotao = 'Faturamento Anual';
+    } else if (tipoFiltro === 'last') {
+        labels = Array.from({ length: 31 }, (_, i) => i + 1);
+        // Ajuste: Busca os dias do mesAnterior
+        valores = labels.map(dia => (dados.mesAnterior ? dados.mesAnterior[dia] : dados[dia]) || 0);
+        labelBotao = 'Mês Passado';
+    } else {
+        labels = Array.from({ length: 31 }, (_, i) => i + 1);
+        // Ajuste: Busca os dias do mesAtual
+        valores = labels.map(dia => (dados.mesAtual ? dados.mesAtual[dia] : dados[dia]) || 0);
+        labelBotao = 'Mês Atual';
+    }
 
     if (window.mainTrendInstance) window.mainTrendInstance.destroy();
 
     window.mainTrendInstance = new Chart(ctx, {
-        type: 'line',
+        type: 'bar', // Mantido 100% como Barras
         data: {
             labels: labels,
             datasets: [{
-                label: 'Faturamento diário',
+                label: labelBotao,
                 data: valores,
-                borderColor: '#3b82f6',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                fill: true,
-                tension: 0.4,
-                pointRadius: 3,
-                pointBackgroundColor: '#3b82f6'
+                backgroundColor: '#3b82f6', // Seu Azul sólido moderno
+                borderRadius: 6,            // Seus Cantos arredondados
+                borderSkipped: false,
+                hoverBackgroundColor: '#2563eb' // Seu efeito hover
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1e293b',
+                    padding: 12,
+                    callbacks: {
+                        label: (c) => ` Receita: R$ ${c.parsed.y.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                    }
+                }
+            },
             scales: {
-                y: { beginAtZero: true, ticks: { callback: v => 'R$ ' + v.toLocaleString('pt-BR') } },
-                x: { grid: { display: false } }
+                y: {
+                    beginAtZero: true,
+                    grid: { color: '#f1f5f9', drawBorder: false },
+                    ticks: {
+                        callback: v => 'R$ ' + v.toLocaleString('pt-BR'),
+                        font: { size: 11 }
+                    }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { size: 10 } }
+                }
             }
         }
     });
 }
 
-document.getElementById('performanceFilter').addEventListener('change', () => {
-    // Agora usando o nome correto da sua variável global
-    atualizarVisaoGeral(window.vendasHistorico);
-});
+document.getElementById('performanceFilter').addEventListener('change', (e) => {
+    const filtro = e.target.value;
 
+    // Chamamos sua função de atualizar dados passando o filtro novo
+    if (typeof atualizarVisaoGeral === 'function') {
+        atualizarVisaoGeral(window.vendasHistorico, filtro);
+    } else {
+        // Se a atualizarVisaoGeral não aceitar parâmetro, chamamos o gráfico direto para testar:
+        renderizarGraficoTendencia(window.vendasHistorico, filtro);
+    }
+});
 
 // ======================================================
 //             atualizar Cards

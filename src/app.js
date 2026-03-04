@@ -27,6 +27,7 @@ const BipagemHistorico = require('./models/BipagemHistorico'); // ✅ Com UM pon
 
 // Rotas e Serviços Extras
 const ProductRoutes = require('./routes/productRoutes');
+const dashboardRoutes = require('./routes/dashboard');
 const shopeeService = require('./services/shopeeService');
 
 
@@ -39,6 +40,7 @@ const app = express();
 app.use(cors());
 app.use(express.json()); // A linha que estava cortada
 app.use(express.urlencoded({ extended: true })); // Importante para formulários normais
+app.use('/api/dashboard', dashboardRoutes);
 
 // Configuração da Sessão no MySQL (Para manter o login salvo)
 const mySessionStore = new SequelizeStore({
