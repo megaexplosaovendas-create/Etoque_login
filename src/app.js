@@ -73,6 +73,16 @@ app.use(session({
 // Sincroniza a tabela de sessões automaticamente
 mySessionStore.sync();
 
+
+User.findOne({ where: { username: 'admin' } }).then(u => {
+    if(u) {
+        console.log(`✅ O Sequelize encontrou o admin! O ID dele é: ${u.id}`);
+        console.log(`🔑 O Hash que ele está lendo começa com: ${u.password.substring(0, 10)}`);
+    } else {
+        console.log("❌ O Sequelize NÃO encontrou nenhum usuário 'admin' na tabela 'users'.");
+    }
+});
+
 // Correção do erro do ícone (Favicon) que vimos antes
 app.get('/favicon.ico', (req, res) => res.status(204).end());
 
