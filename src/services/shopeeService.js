@@ -3,9 +3,12 @@ const crypto = require('crypto');
 
 class ShopeeService {
     constructor() {
-        this.partnerId = parseInt(process.env.SHOPEE_PARTNER_ID);
-        this.partnerKey = process.env.SHOPEE_PARTNER_KEY;
-        this.baseUrl = "https://partner.shopeemobile.com";
+        // Colocando fixo para ignorar possíveis erros do arquivo .env
+        this.partnerId = 1223323;
+        this.partnerKey = "shpk7861717a4b716741504d575449464f4f4544715753424a4d6e7161564356";
+
+        // Mantendo o ambiente de testes correto
+        this.baseUrl = "https://partner.test-stable.shopeemobile.com";
     }
 
     // 1. Gera a assinatura (Sign) - O "carimbo" de segurança
@@ -13,7 +16,7 @@ class ShopeeService {
         const timestamp = Math.floor(Date.now() / 1000);
         // A base da assinatura muda dependendo se tem token ou não
         let baseString = `${this.partnerId}${path}${timestamp}`;
-        
+
         if (extras.accessToken) baseString += extras.accessToken;
         if (extras.shopId) baseString += extras.shopId;
 
@@ -75,5 +78,7 @@ class ShopeeService {
         return response.data;
     }
 }
+
+
 
 module.exports = new ShopeeService();

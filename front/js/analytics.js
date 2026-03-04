@@ -164,17 +164,15 @@ function atualizarDashboardExecutivo() {
 
 // --- LÓGICA LOGÍSTICA / EXPEDIÇÃO ---
 
-function updateSecaoLogistica() {
-    const hoje = getToday();
-    const logsHoje = localLogs.filter(l => l.data_hora.startsWith(hoje));
+function updateSecaoLogistica(logsBanco) {
+    if (!logsBanco) return;
 
-    const total = logsHoje.length;
-    const ok = logsHoje.filter(l => l.status === 'ok').length;
+    const total = logsBanco.length;
+    const ok = logsBanco.filter(l => l.status.toLowerCase() === 'ok').length;
     const taxa = total > 0 ? ((ok / total) * 100).toFixed(1) : 100;
 
-    // UI Bipes
+    // UI Bipes (IDs do seu HTML)
     document.getElementById('totalBipesHoje').innerText = total;
-    document.getElementById('totalOkHoje').innerText = ok;
     document.getElementById('taxaAssertividade').innerText = taxa + "%";
 
     // Alerta Visual de Assertividade
@@ -190,16 +188,29 @@ function updateSecaoLogistica() {
         txtStatus.style.color = "#64748b";
     }
 
-    // Progresso Meta
+    // Progresso Meta (Certifique-se que META_DIARIA está definida, ex: 500)
+    const META_DIARIA = 500; 
     const progresso = Math.min((total / META_DIARIA) * 100, 100).toFixed(1);
     document.getElementById('metaProgresso').innerText = progresso + "%";
     document.getElementById('barraMeta').style.width = progresso + "%";
 
-    // Ritmo
-    document.getElementById('ritmoBipagem').innerText = calcularRitmo(logsHoje);
+    // Preenche a Tabela de Auditoria (Audit)
+    renderizarTabelaLogs(logsBanco);
+}
 
-    renderizarGraficoBarras(logsHoje);
-    renderizarTabelaLogs(logsHoje);
+
+async function sincronizarLogisticaHoje() {
+    try {
+        console.log("📡 Buscando bipes de hoje no servidor...");
+        const res = await fetch('/api/logistica/historico');
+        const logsReais = await res.json();
+
+        // Enviamos os dados do banco para a sua função de atualização
+        updateSecaoLogistica(logsReais);
+        console.log(`✅ ${logsReais.length} bipes carregados para a auditoria.`);
+    } catch (erro) {
+        console.error("❌ Erro ao sincronizar logística:", erro);
+    }
 }
 
 // --- GRÁFICOS E TABELAS OPERACIONAIS ---
@@ -262,11 +273,22 @@ function renderizarGraficoChartJS(historico30Dias) {
 
 function renderizarTabelaLogs(logs) {
     const tbody = document.getElementById('logTbody');
-    tbody.innerHTML = logs.slice(0, 15).map(l => {
-        const hora = new Date(l.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        const cor = l.status === 'ok' ? '#10b981' : '#ef4444';
-        return `<tr><td>${hora}</td><td>${l.codigo_lido}</td><td style="color:${cor}; font-weight:bold;">${l.status.toUpperCase()}</td></tr>`;
-    }).join('');
+    if (!tbody) return;
+
+    tbody.innerHTML = logs.map(l => `
+        <tr>
+            <td>${l.horario}</td>
+            <td style="font-family: monospace; font-weight: bold;">${l.sku}</td>
+            <td>
+                <span style="background: ${l.status === 'ok' ? '#dcfce7' : '#fee2e2'}; 
+                             color: ${l.status === 'ok' ? '#166534' : '#991b1b'}; 
+                             padding: 2px 8px; border-radius: 4px; font-size: 0.8em;">
+                    ${l.status.toUpperCase()}
+                </span>
+            </td>
+            <td>${l.motorista || '---'}</td>
+        </tr>
+    `).join('');
 }
 
 // --- FUNÇÕES UTILITÁRIAS ---
@@ -1770,7 +1792,7 @@ function atualizarKpiFaturamento(listaProdutos) {
 
 
 // ======================================================
-//Ticket Médio
+//                 Ticket Médio
 // ======================================================
 function atualizarKpiTicketMedio(listaVendas) {
     const elementoValor = document.getElementById('dashNetSales'); // Verifique se o ID é este mesmo
@@ -1943,6 +1965,13 @@ function atualizarVisaoGeral(listaVendas) {
     atualizarCardsDashboard(mesAlvo + 1, anoAlvo);
 
     renderizarGraficoTendencia(faturamentoPorDia);
+
+    const mesParaConsulta = mesAlvo + 1;
+    const anoParaConsulta = anoAlvo;
+
+    // Atualiza todos os cards sincronizados
+    atualizarCardsDashboard(mesParaConsulta, anoParaConsulta); // Pedidos Reais
+    atualizarKpiBipagens(mesParaConsulta, anoParaConsulta);    // 🚩 Total de Bipes
 }
 
 
@@ -1988,8 +2017,6 @@ document.getElementById('performanceFilter').addEventListener('change', () => {
 });
 
 
-
-
 // ======================================================
 //             atualizar Cards
 // ======================================================
@@ -2013,5 +2040,39 @@ async function atualizarCardsDashboard(mes, ano) {
         }
     } catch (erro) {
         console.error("❌ Erro ao buscar total de pedidos filtrado:", erro);
+    }
+}
+
+
+
+/************************************************
+ *                Bipagens 
+ ************************************************/
+async function atualizarKpiBipagens(mes, ano) {
+    try {
+        console.log(`📡 Sincronizando Bipes para: ${mes}/${ano}`);
+        const res = await fetch(`/api/stats/bipagens-mensais?mes=${mes}&ano=${ano}`);
+        const dados = await res.json();
+
+        const elValor = document.getElementById('dashTotalOrders'); // ID do seu HTML
+        const elTrend = document.querySelector('.modern-kpi-trend span');
+
+        if (elValor) {
+            // Mostra o total de registros encontrados (ex: 8139)
+            elValor.textContent = Number(dados.total).toLocaleString('pt-BR');
+        }
+
+        if (elTrend) {
+            const valorTrend = parseFloat(dados.tendencia);
+            const isPositiva = valorTrend >= 0;
+
+            // Atualiza o texto da porcentagem
+            elTrend.textContent = `${isPositiva ? '+' : ''}${dados.tendencia}%`;
+
+            // Muda a cor: Verde se subiu, Vermelho se desceu
+            elTrend.style.color = isPositiva ? '#10b981' : '#ef4444';
+        }
+    } catch (erro) {
+        console.error("❌ Falha ao atualizar KPI de bipes:", erro);
     }
 }

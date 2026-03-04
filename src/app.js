@@ -831,8 +831,15 @@ app.post('/api/log-operacao', async (req, res) => {
     }
 });
 
+
+
+
+// ======================================================
+//                   Logistica e Expedição
+// ======================================================
+
+
 // ROTA ESPECIAL PARA LOG DE SAÍDA
-// 👇 CORREÇÃO: Usamos 'app' e adicionamos '/api'
 app.post('/api/log-saida', async (req, res) => {
     const { usuario, acao, detalhes } = req.body;
 
@@ -843,7 +850,6 @@ app.post('/api/log-saida', async (req, res) => {
     res.status(200).send('OK');
 });
 
-// 2. A sua rota de salvar
 app.post('/logistica/registrar', async (req, res) => {
     try {
         const { sku, status, motorista, placa, fornecedor } = req.body;
@@ -894,8 +900,6 @@ app.get('/api/logistica/historico', async (req, res) => {
     }
 });
 
-
-
 app.get('/api/logistica/contagem-hoje', async (req, res) => {
     try {
         const hoje = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
@@ -915,7 +919,7 @@ app.get('/api/logistica/contagem-hoje', async (req, res) => {
 });
 
 /************************************************
- * ROTAS PARA O DASHBOARD
+ *           ROTAS PARA O DASHBOARD
  ************************************************/
 
 // ROTA PARA SALVAR NOVO PRODUTO OU EDITAR
@@ -987,6 +991,53 @@ app.get('/api/total-pedidos-reais', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+
+/************************************************
+ *           Bipagens DASHBOARD
+ ************************************************/
+
+app.get('/api/stats/bipagens-mensais', async (req, res) => {
+    try {
+        const { mes, ano } = req.query;
+        if (!mes || !ano) return res.json({ total: 0, tendencia: 0 });
+
+        const m = parseInt(mes);
+        const a = parseInt(ano);
+
+        // 1. Define o intervalo do mês atual selecionado
+        const inicioMes = new Date(a, m - 1, 1, 0, 0, 0);
+        const fimMes = new Date(a, m, 0, 23, 59, 59);
+
+        // 2. Define o intervalo do mês anterior para comparação (tendência)
+        const inicioMesAnt = new Date(m === 1 ? a - 1 : a, m === 1 ? 11 : m - 2, 1);
+        const fimMesAnt = new Date(m === 1 ? a - 1 : a, m === 1 ? 12 : m - 1, 0, 23, 59, 59);
+
+        // Busca as contagens reais na tabela bipagens_historico
+        const totalAtual = await BipagemHistorico.count({
+            where: { data_registro: { [Op.between]: [inicioMes, fimMes] } }
+        });
+
+        const totalAnterior = await BipagemHistorico.count({
+            where: { data_registro: { [Op.between]: [inicioMesAnt, fimMesAnt] } }
+        });
+
+        // Cálculo da porcentagem de tendência (ex: +15%)
+        let tendencia = 0;
+        if (totalAnterior > 0) {
+            tendencia = ((totalAtual - totalAnterior) / totalAnterior) * 100;
+        }
+
+        res.json({
+            total: totalAtual,
+            tendencia: tendencia.toFixed(1)
+        });
+    } catch (error) {
+        console.error("Erro ao processar estatísticas de bipes:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 
 // 2. ROTAS DE API
 app.use('/products', ProductRoutes);
