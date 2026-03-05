@@ -1008,29 +1008,58 @@ app.get('/api/total-pedidos-reais', async (req, res) => {
 app.get('/api/stats/bipagens-mensais', async (req, res) => {
     try {
         const { mes, ano } = req.query;
-        if (!mes || !ano) return res.json({ total: 0, tendencia: 0 });
+
+        // ✅ CORREÇÃO: checagem explícita de undefined/null
+        // O 'if (!mes)' bloqueava mes=0 (ano inteiro) porque 0 é falsy em JS
+        if (mes === undefined || mes === null || ano === undefined || ano === null) {
+            return res.json({ total: 0, tendencia: 0 });
+        }
 
         const m = parseInt(mes);
         const a = parseInt(ano);
 
-        // 1. Define o intervalo do mês atual selecionado
+        // FILTRO ANO: mes=0 significa "ano inteiro"
+        if (m === 0) {
+            const inicioAno = new Date(a, 0, 1, 0, 0, 0);
+            const fimAno    = new Date(a, 11, 31, 23, 59, 59);
+
+            const inicioAnoAnt = new Date(a - 1, 0, 1, 0, 0, 0);
+            const fimAnoAnt    = new Date(a - 1, 11, 31, 23, 59, 59);
+
+            const totalAno    = await BipagemHistorico.count({
+                where: { data_registro: { [Op.between]: [inicioAno, fimAno] } }
+            });
+            const totalAnoAnt = await BipagemHistorico.count({
+                where: { data_registro: { [Op.between]: [inicioAnoAnt, fimAnoAnt] } }
+            });
+
+            let tendenciaAno = 0;
+            if (totalAnoAnt > 0) {
+                tendenciaAno = ((totalAno - totalAnoAnt) / totalAnoAnt) * 100;
+            }
+
+            console.log(`📅 Bipes ano inteiro ${a}: ${totalAno}`);
+
+            return res.json({
+                total: totalAno,
+                tendencia: tendenciaAno.toFixed(1)
+            });
+        }
+
+        // FILTRO MÊS: comportamento original
         const inicioMes = new Date(a, m - 1, 1, 0, 0, 0);
-        const fimMes = new Date(a, m, 0, 23, 59, 59);
+        const fimMes    = new Date(a, m, 0, 23, 59, 59);
 
-        // 2. Define o intervalo do mês anterior para comparação (tendência)
         const inicioMesAnt = new Date(m === 1 ? a - 1 : a, m === 1 ? 11 : m - 2, 1);
-        const fimMesAnt = new Date(m === 1 ? a - 1 : a, m === 1 ? 12 : m - 1, 0, 23, 59, 59);
+        const fimMesAnt    = new Date(m === 1 ? a - 1 : a, m === 1 ? 12 : m - 1, 0, 23, 59, 59);
 
-        // Busca as contagens reais na tabela bipagens_historico
-        const totalAtual = await BipagemHistorico.count({
+        const totalAtual    = await BipagemHistorico.count({
             where: { data_registro: { [Op.between]: [inicioMes, fimMes] } }
         });
-
         const totalAnterior = await BipagemHistorico.count({
             where: { data_registro: { [Op.between]: [inicioMesAnt, fimMesAnt] } }
         });
 
-        // Cálculo da porcentagem de tendência (ex: +15%)
         let tendencia = 0;
         if (totalAnterior > 0) {
             tendencia = ((totalAtual - totalAnterior) / totalAnterior) * 100;
@@ -1040,12 +1069,12 @@ app.get('/api/stats/bipagens-mensais', async (req, res) => {
             total: totalAtual,
             tendencia: tendencia.toFixed(1)
         });
+
     } catch (error) {
-        console.error("Erro ao processar estatísticas de bipes:", error);
+        console.error('❌ Erro ao processar estatísticas de bipes:', error);
         res.status(500).json({ error: error.message });
     }
 });
-
 
 // 2. ROTAS DE API
 app.use('/products', ProductRoutes);
