@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Produtos</title>
+    <link rel="stylesheet" href="css/produtos.css">
+    <link rel="stylesheet" href="css/sidebar.css">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded" rel="stylesheet" />
+</head>
+
+
+
+<body>
+
+    <button class="sidebar-menu-button">
+        <span class="material-symbols-rounded">menu</span>
+    </button>
+
+    <aside class="sidebar collapsed" id="sidebar">
+        <!-- Sidebar Header -->
+        <header class="sidebar-header">
+            <button class="sidebar-toggler">
+                <span class="material-symbols-rounded">chevron_left</span>
+            </button>
+        </header>
+        <nav class="sidebar-nav">
+            <ul class="nav-list primary-nav">
+
+                <li class="nav-item dropdown-container">
+                    <a href="#" class="nav-link dropdown-toggle">
+                        <span class="material-symbols-rounded">bar_chart</span>
+                        <span class="nav-label">Analytics</span>
+                        <span class="dropdown-icon material-symbols-rounded">keyboard_arrow_down</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li class="nav-item"><a class="nav-link dropdown-title">Analytics</a></li>
+                        <li class="nav-item"><a href="analytics.html#dashboard"
+                                class="nav-link dropdown-link">Dashboard</a></li>
+                        <li class="nav-item"><a href="analytics.html#performance"
+                                class="nav-link dropdown-link">Performance</a></li>
+                        <li class="nav-item"><a href="analytics.html#logistica"
+                                class="nav-link dropdown-link">Logística</a></li>
+                    </ul>
+                </li>
+
+                <li class="nav-item dropdown-container">
+                    <a href="#" class="nav-link dropdown-toggle">
+                        <span class="material-symbols-rounded">work</span>
+                        <span class="nav-label">Administrativo</span>
+                        <span class="dropdown-icon material-symbols-rounded">keyboard_arrow_down</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li class="nav-item"><a class="nav-link dropdown-title">Administrativo</a></li>
+                        <li class="nav-item"><a href="administrativo.html#financeiro"
+                                class="nav-link dropdown-link">Financeiro</a></li>
+                        <li class="nav-item"><a href="administrativo.html#funcionarios"
+                                class="nav-link dropdown-link">Funcionários</a></li>
+                        <li class="nav-item"><a href="administrativo.html#ponto"
+                                class="nav-link dropdown-link">Ponto</a></li>
+                        <li class="nav-item"><a href="administrativo.html#holerite"
+                                class="nav-link dropdown-link">Holerites</a></li>
+                    </ul>
+                </li>
+
+                <li class="nav-item">
+                    <a href="index.html" class="nav-link">
+                        <span class="material-symbols-rounded">inventory_2</span>
+                        <span class="nav-label">Estoque</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li class="nav-item"><a class="nav-link dropdown-title">Estoque</a></li>
+                    </ul>
+                </li>
+
+                <li class="nav-item">
+                    <a href="qualidade.html" class="nav-link">
+                        <span class="material-symbols-rounded">package_2</span>
+                        <span class="nav-label">Produtos</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li class="nav-item"><a class="nav-link dropdown-title">Produtos</a></li>
+                    </ul>
+                </li>
+
+                <li class="nav-item">
+                    <a href="qualidade.html" class="nav-link">
+                        <span class="material-symbols-rounded">fact_check</span>
+                        <span class="nav-label">Qualidade</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li class="nav-item"><a class="nav-link dropdown-title">Qualidade</a></li>
+                    </ul>
+                </li>
+
+                <li class="nav-item">
+                    <a href="bipagem.html" class="nav-link">
+                        <span class="material-symbols-rounded">qr_code_scanner</span>
+                        <span class="nav-label">Bipagem</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li class="nav-item"><a class="nav-link dropdown-title">Bipagem</a></li>
+                    </ul>
+                </li>
+
+                <li class="nav-item">
+                    <a href="mapa.html" class="nav-link">
+                        <span class="material-symbols-rounded">map</span>
+                        <span class="nav-label">Mapa</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li class="nav-item"><a class="nav-link dropdown-title">Mapa</a></li>
+                    </ul>
+                </li>
+
+                <li class="nav-item">
+                    <a href="usuarios.html" class="nav-link">
+                        <span class="material-symbols-rounded">group_add</span>
+                        <span class="nav-label">Equipe</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li class="nav-item"><a class="nav-link dropdown-title">Equipe</a></li>
+                    </ul>
+                </li>
+
+                <li class="nav-item">
+                    <a href="clientes.html" class="nav-link">
+                        <span class="material-symbols-rounded">handshake</span>
+                        <span class="nav-label">Clientes</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li class="nav-item"><a class="nav-link dropdown-title">Clientes</a></li>
+                    </ul>
+                </li>
+
+                <li class="nav-item">
+                    <a href="fornecedores.html" class="nav-link">
+                        <span class="material-symbols-rounded">domain</span>
+                        <span class="nav-label">Fornecedores</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li class="nav-item"><a class="nav-link dropdown-title">Fornecedores</a></li>
+                    </ul>
+                </li>
+
+                <li class="nav-item">
+                    <a href="configuracoes.html" class="nav-link">
+                        <span class="material-symbols-rounded">settings</span>
+                        <span class="nav-label">Configurações</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li class="nav-item"><a class="nav-link dropdown-title">Configurações</a></li>
+                    </ul>
+                </li>
+            </ul>
+
+            <ul class="nav-list secondary-nav">
+                <li class="nav-item profile-nav-item">
+                    <div class="sidebar-profile-card">
+                        <div class="profile-img-box">
+                            <img src="img/avatar-padrao.png" id="sb-user-photo" alt="Perfil">
+                        </div>
+                        <div class="profile-details">
+                            <span class="sb-user-name" id="sb-user-name">Carregando..</span>
+                            <span class="sb-user-role" id="sb-user-role">Acessando..</span>
+                        </div>
+                    </div>
+                    <ul class="dropdown-menu">
+                        <li class="nav-item"><a class="nav-link dropdown-title">Perfil</a></li>
+                    </ul>
+                </li>
+
+                <li class="nav-item sidebar-footer">
+                    <button class="nav-link theme-toggle" type="button">
+                        <span class="material-symbols-rounded theme-icon">dark_mode</span>
+                        <span class="nav-label theme-text">Dark Mode</span>
+                        <span class="theme-toggle-track">
+                            <span class="theme-toggle-indicator"></span>
+                        </span>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li class="nav-item"><a class="nav-link dropdown-title theme-tooltip">Dark Mode</a></li>
+                    </ul>
+                </li>
+
+                <li class="nav-item">
+                    <a href="javascript:void(0)" onclick="logout()" class="nav-link">
+                        <span class="material-symbols-rounded">logout</span>
+                        <span class="nav-label">Sair</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li class="nav-item"><a class="nav-link dropdown-title">Sair</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+    <div class="top-bar">
+
+        <div class="view-buttons">
+            <button class="active">LIST</button>
+            <button>GRID</button>
+        </div>
+
+        <div class="actions">
+            ••• ALL ACTIONS
+        </div>
+
+    </div>
+
+    <table>
+
+        <thead>
+            <tr>
+                <th></th>
+                <th>Name</th>
+                <th>Sales</th>
+                <th>Qty.</th>
+                <th>Rating</th>
+                <th>Price</th>
+                <th>Tag</th>
+                <th></th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            <tr>
+                <td><input type="checkbox" checked></td>
+                <td>
+                    <div class="product">
+                        <img src="https://via.placeholder.com/40">
+                        <div>
+                            <div class="name">MacbookPro15'2019</div>
+                            <div class="sku">SKU 345-091</div>
+                        </div>
+                    </div>
+                </td>
+                <td>1.368<br><small>Sales</small></td>
+                <td>4.890<br><small>Qty.</small></td>
+                <td>4.2 / 5.0<br><small>Rating</small></td>
+                <td>$2.700<br><small>Price</small></td>
+                <td><span class="tag">Electronics</span></td>
+                <td class="menu">⋮</td>
+            </tr>
+
+            <tr>
+                <td><input type="checkbox" checked></td>
+                <td>
+                    <div class="product">
+                        <img src="https://via.placeholder.com/40">
+                        <div>
+                            <div class="name">MacbookPro15'2018</div>
+                            <div class="sku">SKU 345-092</div>
+                        </div>
+                    </div>
+                </td>
+                <td>1.908<br><small>Sales</small></td>
+                <td>970<br><small>Qty.</small></td>
+                <td>4.6 / 5.0<br><small>Rating</small></td>
+                <td>$2.550<br><small>Price</small></td>
+                <td><span class="tag">Electronics</span></td>
+                <td class="menu">⋮</td>
+            </tr>
+
+            <tr>
+                <td><input type="checkbox"></td>
+                <td>
+                    <div class="product">
+                        <img src="https://via.placeholder.com/40">
+                        <div>
+                            <div class="name">MacbookPro15'2017</div>
+                            <div class="sku">SKU 345-093</div>
+                        </div>
+                    </div>
+                </td>
+                <td>1.878<br><small>Sales</small></td>
+                <td>1.560<br><small>Qty.</small></td>
+                <td>4.9 / 5.0<br><small>Rating</small></td>
+                <td>$2.150<br><small>Price</small></td>
+                <td><span class="tag">Electronics</span></td>
+                <td class="menu">⋮</td>
+            </tr>
+
+            <tr>
+                <td><input type="checkbox"></td>
+                <td>
+                    <div class="product">
+                        <img src="https://via.placeholder.com/40">
+                        <div>
+                            <div class="name">MacbookPro13'2019</div>
+                            <div class="sku">SKU 345-094</div>
+                        </div>
+                    </div>
+                </td>
+                <td>2.180<br><small>Sales</small></td>
+                <td>670<br><small>Qty.</small></td>
+                <td>4.6 / 5.0<br><small>Rating</small></td>
+                <td>$1.550<br><small>Price</small></td>
+                <td><span class="tag">Electronics</span></td>
+                <td class="menu">⋮</td>
+            </tr>
+
+            <tr>
+                <td><input type="checkbox"></td>
+                <td>
+                    <div class="product">
+                        <img src="https://via.placeholder.com/40">
+                        <div>
+                            <div class="name">Macbook2019</div>
+                            <div class="sku">SKU 345-095</div>
+                        </div>
+                    </div>
+                </td>
+                <td>1.680<br><small>Sales</small></td>
+                <td>1.990<br><small>Qty.</small></td>
+                <td>4.5 / 5.0<br><small>Rating</small></td>
+                <td>$1.150<br><small>Price</small></td>
+                <td><span class="tag">Electronics</span></td>
+                <td class="menu">⋮</td>
+            </tr>
+
+            <tr>
+                <td><input type="checkbox"></td>
+                <td>
+                    <div class="product">
+                        <img src="https://via.placeholder.com/40">
+                        <div>
+                            <div class="name">MicrosoftSurface</div>
+                            <div class="sku">SKU 345-096</div>
+                        </div>
+                    </div>
+                </td>
+                <td>1.790<br><small>Sales</small></td>
+                <td>3.250<br><small>Qty.</small></td>
+                <td>4.8 / 5.0<br><small>Rating</small></td>
+                <td>$1.950<br><small>Price</small></td>
+                <td><span class="tag">Electronics</span></td>
+                <td class="menu">⋮</td>
+            </tr>
+
+            <tr>
+                <td><input type="checkbox"></td>
+                <td>
+                    <div class="product">
+                        <img src="https://via.placeholder.com/40">
+                        <div>
+                            <div class="name">MacbookAir11'2017</div>
+                            <div class="sku">SKU 345-097</div>
+                        </div>
+                    </div>
+                </td>
+                <td>1.550<br><small>Sales</small></td>
+                <td>2.600<br><small>Qty.</small></td>
+                <td>4.9 / 5.0<br><small>Rating</small></td>
+                <td>$1.250<br><small>Price</small></td>
+                <td><span class="tag">Electronics</span></td>
+                <td class="menu">⋮</td>
+            </tr>
+
+        </tbody>
+
+    </table>
+
+    <div class="pagination">
+        <span class="disabled">Prev</span>
+        <span>1</span>
+        <span class="active">2</span>
+        <span>3</span>
+        <span>4</span>
+        <span>5</span>
+        <span>Next</span>
+    </div>
+
+    <script src="js/sidebar.js"></script>
+</body>
+
+</html>

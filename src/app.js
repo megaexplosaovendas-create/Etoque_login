@@ -560,12 +560,10 @@ app.get('/api/fix/auto-associar', async (req, res) => {
     }
 });
 
+
 // ==========================================
 // ROTA PARA REGISTRAR VENDAS DO ANALYTICS
 // ==========================================
-
-
-
 // --- ROTA PARA BUSCAR O HISTÓRICO (GET /api/vendas) ---
 app.get('/api/vendas', async (req, res) => {
     try {
@@ -845,11 +843,9 @@ app.post('/api/log-operacao', async (req, res) => {
 
 
 
-
 // ======================================================
 //                   Logistica e Expedição
 // ======================================================
-
 
 // ROTA ESPECIAL PARA LOG DE SAÍDA
 app.post('/api/log-saida', async (req, res) => {
@@ -930,10 +926,10 @@ app.get('/api/logistica/contagem-hoje', async (req, res) => {
     }
 });
 
+
 /************************************************
  *           ROTAS PARA O DASHBOARD
  ************************************************/
-
 // ROTA PARA SALVAR NOVO PRODUTO OU EDITAR
 app.get('/api/produtos', async (req, res) => {
     try {

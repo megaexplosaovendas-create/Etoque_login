@@ -1,0 +1,157 @@
+:root {
+    /* O NOVO AZUL PARA COMBINAR COM A SIDEBAR */
+    --primary: #19253f;
+    /* Azul escuro da sua nova sidebar */
+    --bg: #ECF0F1;
+    /* 👇 AQUI: garante que a área rolável fique com a cor certa */
+    --card-bg: #ffffff;
+    /* Azul um pouco mais escuro para o clique/hover dos botões */
+
+    /* AS CORES BASE QUE VOCÊ JÁ TINHA (Mantidas) */
+    --bg: #ECF0F1;
+    /* O Fundo Branco Gelo */
+    --text: #1e293b;
+    /* Texto principal escuro elegante */
+    --text-muted: #64748b;
+    /* Texto de apoio (cinza claro) */
+
+    /* Fundo branco puro para os painéis e tabela */
+    --border: #e2e8f0;
+    /* Linhas e bordas bem sutis */
+
+    /* CORES DE STATUS (Mantidas para a Tabela e Alertas) */
+    --success: #10b981;
+    /* Verde para estoque cheio */
+    --warning: #f59e0b;
+    /* Laranja para atenção */
+    --danger: #ef4444;
+    /* Vermelho para erros e falta de estoque */
+}
+
+/* style.css */
+/* 1. RESET GLOBAL */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body{
+    margin:0;
+    font-family:Arial, Helvetica, sans-serif;
+    background:#f6f7fb;
+}
+
+
+.container {
+    margin-left: 90px; /* espaço para a sidebar */
+    padding: 40px;
+}
+
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.view-buttons button {
+    border: none;
+    padding: 8px 14px;
+    margin-right: 5px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.view-buttons .active {
+    background: #4f6ef7;
+    color: white;
+}
+
+.view-buttons button:not(.active) {
+    background: #eef1ff;
+    color: #4f6ef7;
+}
+
+.actions {
+    color: #888;
+    cursor: pointer;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+thead {
+    color: #888;
+    font-size: 14px;
+}
+
+th {
+    text-align: left;
+    padding: 10px;
+}
+
+td {
+    padding: 15px 10px;
+    border-top: 1px solid #eee;
+    vertical-align: middle;
+}
+
+.product {
+    display: flex;
+    align-items: center;
+}
+
+.product img {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    margin-right: 10px;
+}
+
+.name {
+    font-weight: 600;
+}
+
+.sku {
+    font-size: 12px;
+    color: #999;
+}
+
+.tag {
+    background: #eef1ff;
+    color: #4f6ef7;
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+}
+
+.menu {
+    font-size: 20px;
+    color: #aaa;
+    cursor: pointer;
+}
+
+.pagination {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.pagination span {
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.pagination .active {
+    background: #4f6ef7;
+    color: white;
+}
+
+.pagination .disabled {
+    color: #bbb;
+}
