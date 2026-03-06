@@ -6,54 +6,85 @@ const moment = require('moment');
 
 router.get('/resumo', async (req, res) => {
     const { filtro } = req.query;
-    const hoje = moment('2026-03-05'); // 📅 Ajustado para dia 05 para pegar suas vendas recentes
+    const hoje = moment('2026-03-05');
+
     let dataInicio, dataFim;
+    let dataInicioAnt, dataFimAnt;
 
     if (filtro === 'last') {
-        dataInicio = hoje.clone().subtract(1, 'month').startOf('month').format('YYYY-MM-DD');
-        dataFim = hoje.clone().subtract(1, 'month').endOf('month').format('YYYY-MM-DD');
+        // Mês passado completo
+        dataInicio    = hoje.clone().subtract(1, 'month').startOf('month').format('YYYY-MM-DD');
+        dataFim       = hoje.clone().subtract(1, 'month').endOf('month').format('YYYY-MM-DD');
+        // Comparação: 2 meses atrás completo
+        dataInicioAnt = hoje.clone().subtract(2, 'months').startOf('month').format('YYYY-MM-DD');
+        dataFimAnt    = hoje.clone().subtract(2, 'months').endOf('month').format('YYYY-MM-DD');
+
     } else if (filtro === 'year') {
-        dataInicio = hoje.clone().startOf('year').format('YYYY-MM-DD');
-        dataFim = hoje.clone().endOf('year').format('YYYY-MM-DD');
+        // Ano atual
+        dataInicio    = hoje.clone().startOf('year').format('YYYY-MM-DD');
+        dataFim       = hoje.clone().endOf('year').format('YYYY-MM-DD');
+        // Comparação: ano passado completo
+        dataInicioAnt = hoje.clone().subtract(1, 'year').startOf('year').format('YYYY-MM-DD');
+        dataFimAnt    = hoje.clone().subtract(1, 'year').endOf('year').format('YYYY-MM-DD');
+
     } else { // current
-        dataInicio = hoje.clone().startOf('month').format('YYYY-MM-DD');
-        dataFim = hoje.clone().format('YYYY-MM-DD');
+        // Mês atual até hoje
+        dataInicio    = hoje.clone().startOf('month').format('YYYY-MM-DD');
+        dataFim       = hoje.clone().format('YYYY-MM-DD');
+        // ✅ CORREÇÃO: mês anterior COMPLETO (não só até o dia 05)
+        // Usar o mês inteiro permite comparação real com fevereiro
+        dataInicioAnt = hoje.clone().subtract(1, 'month').startOf('month').format('YYYY-MM-DD');
+        dataFimAnt    = hoje.clone().subtract(1, 'month').endOf('month').format('YYYY-MM-DD');
     }
 
     try {
         const resultado = await Venda.findOne({
             attributes: [
-                // 1. Soma do Faturamento
                 [fn('SUM', literal('quantidade * preco_venda')), 'faturamento'],
-
-                // 2. Total de Bipes (Contagem de todas as linhas)
                 [fn('COUNT', col('id')), 'bipes'],
-
-                // 3. Total de Pedidos Reais (Se quiser que seja igual aos bipes, use 'id')
-                // Se quiser pedidos únicos por transação, use 'DISTINCT' em 'item_id' ou similar
                 [fn('COUNT', col('id')), 'pedidosReais']
             ],
-            where: {
-                data_venda: { [Op.between]: [dataInicio, dataFim] }
-            },
+            where: { data_venda: { [Op.between]: [dataInicio, dataFim] } },
             raw: true
         });
 
-        const faturamento = parseFloat(resultado.faturamento) || 0;
-        const bipes = parseInt(resultado.bipes) || 0;
-        const pedidosReais = parseInt(resultado.pedidosReais) || 0;
+        const resultadoAnt = await Venda.findOne({
+            attributes: [
+                [fn('SUM', literal('quantidade * preco_venda')), 'faturamento'],
+                [fn('COUNT', col('id')), 'bipes']
+            ],
+            where: { data_venda: { [Op.between]: [dataInicioAnt, dataFimAnt] } },
+            raw: true
+        });
 
-        // 🚩 A MATEMÁTICA DO TICKET MÉDIO
-        // Agora ele divide o faturamento de R$ 1 milhão pelos ~2.948 bipes
-        const ticketMedioCalculado = pedidosReais > 0 ? (faturamento / pedidosReais) : 0;
+        const faturamento    = parseFloat(resultado.faturamento)    || 0;
+        const bipes          = parseInt(resultado.bipes)            || 0;
+        const pedidosReais   = parseInt(resultado.pedidosReais)     || 0;
+        const faturamentoAnt = parseFloat(resultadoAnt.faturamento) || 0;
+        const bipesAnt       = parseInt(resultadoAnt.bipes)         || 0;
+
+        const ticketMedio    = pedidosReais > 0 ? faturamento    / pedidosReais : 0;
+        const ticketMedioAnt = bipesAnt     > 0 ? faturamentoAnt / bipesAnt     : 0;
+
+        const faturamentoTendencia = faturamentoAnt > 0
+            ? ((faturamento - faturamentoAnt) / faturamentoAnt * 100).toFixed(1)
+            : null;
+
+        const ticketTendencia = ticketMedioAnt > 0
+            ? ((ticketMedio - ticketMedioAnt) / ticketMedioAnt * 100).toFixed(1)
+            : null;
 
         res.json({
             faturamento,
             bipes,
             pedidosReais,
-            ticketMedio: ticketMedioCalculado.toFixed(2)
+            ticketMedio:          ticketMedio.toFixed(2),
+            faturamentoTendencia,
+            ticketTendencia
         });
+
     } catch (e) {
+        console.error('❌ Erro no /resumo:', e);
         res.status(500).json({ erro: e.message });
     }
 });

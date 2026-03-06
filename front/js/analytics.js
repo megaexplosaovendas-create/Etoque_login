@@ -1656,6 +1656,32 @@ async function carregarDadosDoBanco() {
 }
 
 // ======================================================
+//   HELPER: pega o .modern-kpi-trend do card correto
+//   usando o id do elemento de valor como âncora
+// ======================================================
+function getTrend(idValor) {
+    const elValor = document.getElementById(idValor);
+    if (!elValor) return null;
+    return elValor.closest('.modern-kpi-card')?.querySelector('.modern-kpi-trend');
+}
+
+function aplicarTrend(elTrend, tendencia, semHistorico, sufixo = 'vs mês passado') {
+    if (!elTrend) return;
+
+    if (semHistorico) {
+        elTrend.style.visibility = 'hidden';
+        return;
+    }
+
+    elTrend.style.visibility = 'visible';
+    const valor    = parseFloat(tendencia);
+    const isPos    = valor >= 0;
+    const classe   = isPos ? 'trend-up' : 'trend-down';
+    const sinal    = isPos ? '+' : '';
+    elTrend.innerHTML = `<span class="${classe}">${sinal}${valor.toFixed(1)}%</span> ${sufixo}`;
+}
+
+// ======================================================
 //                   Grafico Estoque
 // ======================================================
 function renderizarGraficoEstoque(listaProdutos) {
@@ -1725,46 +1751,37 @@ window.buscarImagemAlternativa = function (imgElement, sku) {
 // ======================================================
 function atualizarKpiFaturamento(listaProdutos) {
     const elementoValor = document.getElementById('dashTotalSales');
-    const elementoTrend = document.querySelector('.modern-kpi-trend');
     if (!elementoValor) return;
 
-    const agora = new Date();
-    const mesAtual = agora.getMonth();
-    const anoAtual = agora.getFullYear();
+    const agora      = new Date();
+    const mesAtual   = agora.getMonth();
+    const anoAtual   = agora.getFullYear();
     const mesPassado = mesAtual === 0 ? 11 : mesAtual - 1;
     const anoPassado = mesAtual === 0 ? anoAtual - 1 : anoAtual;
 
-    let faturamentoAtual = 0;
+    let faturamentoAtual   = 0;
     let faturamentoPassado = 0;
 
     listaProdutos.forEach(v => {
         if (!v.data_venda) return;
-        const partes = v.data_venda.split('-');
+        const partes   = v.data_venda.split('-');
         const anoVenda = parseInt(partes[0]);
         const mesVenda = parseInt(partes[1]) - 1;
-        const preco = parseFloat(v.preco_venda || 0);
-        const qtd = Number(v.quantidade || 0);
-        const totalVenda = preco * qtd;
+        const total    = parseFloat(v.preco_venda || 0) * Number(v.quantidade || 0);
 
-        if (mesVenda === mesAtual && anoVenda === anoAtual) faturamentoAtual += totalVenda;
-        else if (mesVenda === mesPassado && anoVenda === anoPassado) faturamentoPassado += totalVenda;
+        if (mesVenda === mesAtual   && anoVenda === anoAtual)   faturamentoAtual   += total;
+        if (mesVenda === mesPassado && anoVenda === anoPassado) faturamentoPassado += total;
     });
 
-    // ⚠️ Toca APENAS em #dashTotalSales. Nunca em #dashNetSales, #dashTotalOrders ou #overviewTotalOrders.
     elementoValor.textContent = formatarMoeda(faturamentoAtual);
 
-    if (elementoTrend) {
-        if (faturamentoPassado > 0) {
-            const porcentagem = ((faturamentoAtual - faturamentoPassado) / faturamentoPassado) * 100;
-            const classe = porcentagem >= 0 ? 'trend-up' : 'trend-down';
-            const sinal = porcentagem >= 0 ? '+' : '';
-            elementoTrend.innerHTML = `<span class="${classe}">${sinal}${porcentagem.toFixed(1)}%</span> vs mês passado`;
-        } else {
-            elementoTrend.innerHTML = `<span style="color:#94a3b8;">0.0%</span> vs mês passado`;
-        }
-    }
+    // ✅ Trend do card de Faturamento — não afeta os outros cards
+    const variacao = faturamentoPassado > 0
+        ? ((faturamentoAtual - faturamentoPassado) / faturamentoPassado) * 100
+        : 0;
+    aplicarTrend(getTrend('dashTotalSales'), variacao, faturamentoPassado === 0);
 
-    console.log(`📊 Fevereiro: R$ ${faturamentoAtual.toFixed(2)} | Janeiro: R$ ${faturamentoPassado.toFixed(2)}`);
+    console.log(`📊 Atual: R$ ${faturamentoAtual.toFixed(2)} | Anterior: R$ ${faturamentoPassado.toFixed(2)}`);
 }
 
 
@@ -1782,12 +1799,9 @@ function atualizarKpiTicketMedio(listaVendas) {
 // ======================================================
 function atualizarKpiSkusAtivos(listaVendas) {
     const elementoValor = document.getElementById('dashTotalVariant');
-    const card = elementoValor ? elementoValor.closest('.modern-kpi-card') : null;
-    const elementoTrend = card ? card.querySelector('.modern-kpi-trend') : null;
-
     if (!elementoValor || !window.todosOsProdutos) return;
 
-    const totalSkus = window.todosOsProdutos.length;
+    const totalSkus       = window.todosOsProdutos.length;
     const trintaDiasAtras = new Date();
     trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
 
@@ -1799,19 +1813,19 @@ function atualizarKpiSkusAtivos(listaVendas) {
         }
     });
 
-    const qtdComSaida = skusComSaida.size;
-    const qtdSemSaida = totalSkus - qtdComSaida;
+    const qtdSemSaida         = totalSkus - skusComSaida.size;
     const porcentagemSemSaida = totalSkus > 0 ? (qtdSemSaida / totalSkus) * 100 : 0;
 
     elementoValor.textContent = totalSkus;
 
-    if (elementoTrend) {
-        elementoTrend.innerHTML = `
-            <span class="trend-down">-${porcentagemSemSaida.toFixed(1)}%</span> sem saída (30d)
-        `;
+    // ✅ Trend do card de SKUs — sufixo próprio, sempre visível
+    const elTrend = getTrend('dashTotalVariant');
+    if (elTrend) {
+        elTrend.style.visibility = 'visible';
+        elTrend.innerHTML = `<span class="trend-down">-${porcentagemSemSaida.toFixed(1)}%</span> sem saída (30d)`;
     }
 
-    console.log(`📦 Total SKUs: ${totalSkus} | Ativos (30d): ${qtdComSaida} | Sem Saída: ${qtdSemSaida}`);
+    console.log(`📦 SKUs: ${totalSkus} | Ativos (30d): ${skusComSaida.size} | Sem Saída: ${qtdSemSaida}`);
 }
 
 
@@ -1839,25 +1853,35 @@ async function atualizarVisaoGeral() {
                 : Number(valor).toLocaleString('pt-BR');
         };
 
-        // ✅ Faturamento — fonte: MySQL
-        atualizarTexto('dashTotalSales', dados.faturamento, true);
+        // Faturamento
+        atualizarTexto('dashTotalSales',     dados.faturamento, true);
         atualizarTexto('overviewTotalSpent', dados.faturamento, true);
 
-        // ✅ Ticket Médio — fonte: MySQL (back-end: faturamento / bipes)
+        // ✅ Trend do Faturamento — esconde se vier null, undefined ou NaN
+        const fatTend = dados.faturamentoTendencia;
+        aplicarTrend(
+            getTrend('dashTotalSales'),
+            fatTend,
+            fatTend === null || fatTend === undefined || isNaN(parseFloat(fatTend))
+        );
+
+        // Ticket Médio
         atualizarTexto('dashNetSales', dados.ticketMedio, true);
 
-        // ❌ #dashTotalOrders — NÃO atualizado aqui.
-        //    Dono exclusivo: atualizarKpiBipagens() via /api/stats/bipagens-mensais
+        // ✅ Trend do Ticket Médio — esconde se vier null, undefined ou NaN
+        const tickTend = dados.ticketTendencia;
+        aplicarTrend(
+            getTrend('dashNetSales'),
+            tickTend,
+            tickTend === null || tickTend === undefined || isNaN(parseFloat(tickTend))
+        );
 
-        // ❌ #overviewTotalOrders — NÃO atualizado aqui.
-        //    Dono exclusivo: atualizarCardPedidosPDF() após upload do PDF
-        //                    e atualizarCardsDashboard() ao mudar filtro de mês
-
+        // Gráfico
         const rotaGrafico = (filtro === 'year')
             ? '/api/dashboard/grafico-anual'
             : `/api/dashboard/grafico-diario?filtro=${filtro}`;
 
-        const resGrafico = await fetch(rotaGrafico);
+        const resGrafico   = await fetch(rotaGrafico);
         const dadosGrafico = await resGrafico.json();
 
         if (typeof renderizarGraficoTendencia === 'function') {
@@ -1868,7 +1892,6 @@ async function atualizarVisaoGeral() {
         console.error('❌ Erro na sincronização da API:', erro);
     }
 }
-
 
 // ======================================================
 //             Grafico Tendencia
@@ -2028,23 +2051,27 @@ async function atualizarCardsDashboard(mes, ano) {
 async function atualizarKpiBipagens(mes, ano) {
     try {
         console.log(`📡 Sincronizando Bipes para: ${mes}/${ano}`);
-        const res = await fetch(`/api/stats/bipagens-mensais?mes=${mes}&ano=${ano}`);
+        const res   = await fetch(`/api/stats/bipagens-mensais?mes=${mes}&ano=${ano}`);
         const dados = await res.json();
 
         const elValor = document.getElementById('dashTotalOrders');
-        const elTrend = document.querySelector('.modern-kpi-trend span');
-
         if (elValor) {
             elValor.textContent = Number(dados.total).toLocaleString('pt-BR');
         }
 
-        if (elTrend) {
-            const valorTrend = parseFloat(dados.tendencia);
-            const isPositiva = valorTrend >= 0;
-            elTrend.textContent = `${isPositiva ? '+' : ''}${dados.tendencia}%`;
-            elTrend.style.color = isPositiva ? '#10b981' : '#ef4444';
-        }
+        // ✅ Trend do card de Bipes — não afeta os outros cards
+        aplicarTrend(getTrend('dashTotalOrders'), dados.tendencia, dados.semHistorico);
+
     } catch (erro) {
         console.error('❌ Falha ao atualizar KPI de bipes:', erro);
     }
+}
+
+// ======================================================
+//   Ticket Médio — esconde trend pois não há variação
+//   calculada ainda. Chame após atualizarVisaoGeral().
+// ======================================================
+function esconderTrendTicket() {
+    const elTrend = getTrend('dashNetSales');
+    if (elTrend) elTrend.style.visibility = 'hidden';
 }

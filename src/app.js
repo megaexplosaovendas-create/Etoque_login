@@ -1026,10 +1026,8 @@ app.get('/api/stats/bipagens-mensais', async (req, res) => {
     try {
         const { mes, ano } = req.query;
 
-        // ✅ CORREÇÃO: checagem explícita de undefined/null
-        // O 'if (!mes)' bloqueava mes=0 (ano inteiro) porque 0 é falsy em JS
         if (mes === undefined || mes === null || ano === undefined || ano === null) {
-            return res.json({ total: 0, tendencia: 0 });
+            return res.json({ total: 0, tendencia: '0.0', semHistorico: true });
         }
 
         const m = parseInt(mes);
@@ -1037,13 +1035,12 @@ app.get('/api/stats/bipagens-mensais', async (req, res) => {
 
         // FILTRO ANO: mes=0 significa "ano inteiro"
         if (m === 0) {
-            const inicioAno = new Date(a, 0, 1, 0, 0, 0);
-            const fimAno = new Date(a, 11, 31, 23, 59, 59);
-
+            const inicioAno    = new Date(a, 0, 1, 0, 0, 0);
+            const fimAno       = new Date(a, 11, 31, 23, 59, 59);
             const inicioAnoAnt = new Date(a - 1, 0, 1, 0, 0, 0);
-            const fimAnoAnt = new Date(a - 1, 11, 31, 23, 59, 59);
+            const fimAnoAnt    = new Date(a - 1, 11, 31, 23, 59, 59);
 
-            const totalAno = await BipagemHistorico.count({
+            const totalAno    = await BipagemHistorico.count({
                 where: { data_registro: { [Op.between]: [inicioAno, fimAno] } }
             });
             const totalAnoAnt = await BipagemHistorico.count({
@@ -1059,18 +1056,18 @@ app.get('/api/stats/bipagens-mensais', async (req, res) => {
 
             return res.json({
                 total: totalAno,
-                tendencia: tendenciaAno.toFixed(1)
+                tendencia: tendenciaAno.toFixed(1),
+                semHistorico: totalAnoAnt === 0  // ✅ esconde trend se não há ano anterior
             });
         }
 
-        // FILTRO MÊS: comportamento original
-        const inicioMes = new Date(a, m - 1, 1, 0, 0, 0);
-        const fimMes = new Date(a, m, 0, 23, 59, 59);
-
+        // FILTRO MÊS
+        const inicioMes    = new Date(a, m - 1, 1, 0, 0, 0);
+        const fimMes       = new Date(a, m, 0, 23, 59, 59);
         const inicioMesAnt = new Date(m === 1 ? a - 1 : a, m === 1 ? 11 : m - 2, 1);
-        const fimMesAnt = new Date(m === 1 ? a - 1 : a, m === 1 ? 12 : m - 1, 0, 23, 59, 59);
+        const fimMesAnt    = new Date(m === 1 ? a - 1 : a, m === 1 ? 12 : m - 1, 0, 23, 59, 59);
 
-        const totalAtual = await BipagemHistorico.count({
+        const totalAtual    = await BipagemHistorico.count({
             where: { data_registro: { [Op.between]: [inicioMes, fimMes] } }
         });
         const totalAnterior = await BipagemHistorico.count({
@@ -1084,7 +1081,8 @@ app.get('/api/stats/bipagens-mensais', async (req, res) => {
 
         res.json({
             total: totalAtual,
-            tendencia: tendencia.toFixed(1)
+            tendencia: tendencia.toFixed(1),
+            semHistorico: totalAnterior === 0  // ✅ esconde trend se não há mês anterior
         });
 
     } catch (error) {
@@ -1092,6 +1090,7 @@ app.get('/api/stats/bipagens-mensais', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
 
 // 2. ROTAS DE API
 app.use('/products', ProductRoutes);
