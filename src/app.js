@@ -22,7 +22,7 @@ const SequelizeStore = require('connect-session-sequelize')(session.Store);
 const Product = require('./models/Product');
 const User = require('./models/User');    // Faltava
 const Venda = require('./models/Vendas'); // Faltava
-const  HistoricoPedido  = require('./models/HistoricoPedido');
+const HistoricoPedido = require('./models/HistoricoPedido');
 const BipagemHistorico = require('./models/BipagemHistorico'); // ✅ Com UM ponto só
 
 // Rotas e Serviços Extras
@@ -77,7 +77,7 @@ mySessionStore.sync();
 
 
 User.findOne({ where: { username: 'admin' } }).then(u => {
-    if(u) {
+    if (u) {
         console.log(`✅ O Sequelize encontrou o admin! O ID dele é: ${u.id}`);
         console.log(`🔑 O Hash que ele está lendo começa com: ${u.password.substring(0, 10)}`);
     } else {
@@ -596,12 +596,12 @@ app.get('/api/top-produtos', async (req, res) => {
         const topProdutos = await Venda.findAll({
             attributes: [
                 'item_id',
-                [Venda.sequelize.fn('SUM', Venda.sequelize.col('quantidade')), 'total_bipes'] 
+                [Venda.sequelize.fn('SUM', Venda.sequelize.col('quantidade')), 'total_bipes']
             ],
             // 🚩 Agrupando apenas pelas colunas que existem no seu model
             group: [
                 'item_id',
-                'Product.item_id', 
+                'Product.item_id',
                 'Product.nome_produto',
                 'Product.imagem_url',
                 'Product.preco_venda'
@@ -611,13 +611,13 @@ app.get('/api/top-produtos', async (req, res) => {
             include: [{
                 model: Product,
                 // 🚩 Puxando apenas os atributos reais
-                attributes: ['item_id', 'nome_produto', 'imagem_url', 'preco_venda'], 
-                required: true 
+                attributes: ['item_id', 'nome_produto', 'imagem_url', 'preco_venda'],
+                required: true
             }]
         });
-        
+
         res.json(topProdutos);
-        
+
     } catch (error) {
         console.error("❌ ERRO FATAL NO TOP 5:", error.message);
         res.status(500).send("Erro interno: " + error.message);
@@ -650,7 +650,7 @@ app.post('/api/vendas', async (req, res) => {
 
         // 3. BAIXA O ESTOQUE (Agora vai funcionar pois o 'produto' foi achado)
         await produto.decrement('estoque_atual', { by: Number(quantidade) });
-        
+
         console.log(`✅ Sucesso: ${item_id} | Venda: R$ ${produto.preco_venda} | Estoque Atualizado.`);
 
         res.status(201).json({ success: true, message: "Venda e Estoque processados" });
@@ -976,26 +976,43 @@ app.post('/api/historico-pedidos', async (req, res) => {
 app.get('/api/total-pedidos-reais', async (req, res) => {
     try {
         const { mes, ano } = req.query;
-        if (!mes || !ano) return res.json({ total: 0 });
 
-        // Criamos o início e o fim do mês de forma robusta
-        // Mês no JS Date é 0-11, então (mes - 1)
-        const dataInicio = new Date(ano, mes - 1, 1, 0, 0, 0);
-        const dataFim = new Date(ano, mes, 0, 23, 59, 59); // Dia 0 do mês seguinte é o último deste
+        // ✅ CORREÇÃO: checagem explícita — !mes bloqueava mes=0 (ano inteiro) pois 0 é falsy em JS
+        if (mes === undefined || mes === null || ano === undefined || ano === null) {
+            return res.json({ total: 0 });
+        }
+
+        const m = parseInt(mes);
+        const a = parseInt(ano);
+
+        // ✅ FILTRO ANO: mes=0 soma todos os pedidos do ano inteiro
+        if (m === 0) {
+            const dataInicio = new Date(a, 0, 1, 0, 0, 0);
+            const dataFim = new Date(a, 11, 31, 23, 59, 59);
+
+            console.log(`📡 Filtrando Pedidos Ano Inteiro: ${dataInicio.toISOString()} até ${dataFim.toISOString()}`);
+
+            const total = await HistoricoPedido.sum('quantidade', {
+                where: { data_registro: { [Op.between]: [dataInicio, dataFim] } }
+            });
+
+            return res.json({ total: total || 0 });
+        }
+
+        // FILTRO MÊS: comportamento original
+        const dataInicio = new Date(a, m - 1, 1, 0, 0, 0);
+        const dataFim = new Date(a, m, 0, 23, 59, 59);
 
         console.log(`📡 Filtrando Banco: ${dataInicio.toISOString()} até ${dataFim.toISOString()}`);
 
         const total = await HistoricoPedido.sum('quantidade', {
-            where: {
-                data_registro: {
-                    [Op.between]: [dataInicio, dataFim]
-                }
-            }
+            where: { data_registro: { [Op.between]: [dataInicio, dataFim] } }
         });
 
         res.json({ total: total || 0 });
+
     } catch (error) {
-        console.error("❌ Erro na soma:", error);
+        console.error('❌ Erro na soma:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -1021,12 +1038,12 @@ app.get('/api/stats/bipagens-mensais', async (req, res) => {
         // FILTRO ANO: mes=0 significa "ano inteiro"
         if (m === 0) {
             const inicioAno = new Date(a, 0, 1, 0, 0, 0);
-            const fimAno    = new Date(a, 11, 31, 23, 59, 59);
+            const fimAno = new Date(a, 11, 31, 23, 59, 59);
 
             const inicioAnoAnt = new Date(a - 1, 0, 1, 0, 0, 0);
-            const fimAnoAnt    = new Date(a - 1, 11, 31, 23, 59, 59);
+            const fimAnoAnt = new Date(a - 1, 11, 31, 23, 59, 59);
 
-            const totalAno    = await BipagemHistorico.count({
+            const totalAno = await BipagemHistorico.count({
                 where: { data_registro: { [Op.between]: [inicioAno, fimAno] } }
             });
             const totalAnoAnt = await BipagemHistorico.count({
@@ -1048,12 +1065,12 @@ app.get('/api/stats/bipagens-mensais', async (req, res) => {
 
         // FILTRO MÊS: comportamento original
         const inicioMes = new Date(a, m - 1, 1, 0, 0, 0);
-        const fimMes    = new Date(a, m, 0, 23, 59, 59);
+        const fimMes = new Date(a, m, 0, 23, 59, 59);
 
         const inicioMesAnt = new Date(m === 1 ? a - 1 : a, m === 1 ? 11 : m - 2, 1);
-        const fimMesAnt    = new Date(m === 1 ? a - 1 : a, m === 1 ? 12 : m - 1, 0, 23, 59, 59);
+        const fimMesAnt = new Date(m === 1 ? a - 1 : a, m === 1 ? 12 : m - 1, 0, 23, 59, 59);
 
-        const totalAtual    = await BipagemHistorico.count({
+        const totalAtual = await BipagemHistorico.count({
             where: { data_registro: { [Op.between]: [inicioMes, fimMes] } }
         });
         const totalAnterior = await BipagemHistorico.count({

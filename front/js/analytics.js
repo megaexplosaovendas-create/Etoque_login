@@ -1941,39 +1941,42 @@ function renderizarGraficoTendencia(dados, tipoFiltro = 'current') {
 document.getElementById('performanceFilter').addEventListener('change', (e) => {
     const filtro = e.target.value;
 
-    // Faturamento + Ticket Médio (já funcionava)
+    // Faturamento + Ticket Médio
     if (typeof atualizarVisaoGeral === 'function') {
         atualizarVisaoGeral();
     }
 
-    // ✅ CORREÇÃO: Bipes agora também atualiza ao trocar o filtro
-    // Converte o filtro (current/last/year) em mes/ano para a rota
+    // Converte o filtro (current/last/year) em mes/ano
     const agora = new Date();
     let mes, ano;
 
     if (filtro === 'last') {
-        // Mês passado
         const d = new Date(agora.getFullYear(), agora.getMonth() - 1, 1);
         mes = d.getMonth() + 1;
         ano = d.getFullYear();
     } else if (filtro === 'year') {
-        // Ano inteiro — passa mês 0 como sinal especial para a rota
         mes = 0;
         ano = agora.getFullYear();
     } else {
-        // Mês atual (current)
         mes = agora.getMonth() + 1;
         ano = agora.getFullYear();
     }
 
+    // Bipes (MySQL - bipagens_historico)
     if (typeof atualizarKpiBipagens === 'function') {
         atualizarKpiBipagens(mes, ano);
+    }
+
+    // ✅ CORREÇÃO: Total de Pedidos (PDF) agora também atualiza ao trocar o filtro
+    if (typeof atualizarCardsDashboard === 'function') {
+        atualizarCardsDashboard(mes, ano);
     }
 
     if (typeof renderizarGraficoTendencia === 'function') {
         renderizarGraficoTendencia(window.vendasHistorico, filtro);
     }
 });
+
 
 
 // ======================================================
